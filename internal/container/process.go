@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
-	"syscall"
 )
 
 func ExecDetached(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
-	if runtime.GOOS != "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+
+	applyDetachedAttr(cmd)
+
+	err := cmd.Start()
+	if err != nil {
+		return err
 	}
-	return cmd.Start()
+
+	return cmd.Process.Release()
 }
 
 func RunUpSync(path string) error {

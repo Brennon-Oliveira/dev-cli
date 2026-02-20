@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -61,12 +61,29 @@ jobs:
             tar -czvf dev-${{ matrix.os }}.tar.gz dev${{ matrix.ext }}
           fi
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-${{ matrix.os }}
+          path: |
+            *.zip
+            *.tar.gz
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
       - name: Create Draft Release and Upload Asset
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          files: |
-            *.zip
-            *.tar.gz
+          files: artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
