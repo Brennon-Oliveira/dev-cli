@@ -51,7 +51,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: go build -v -o dev${{ matrix.ext }} main.go
+        run: go build -v -ldflags="-X 'github.com/Brennon-Oliveira/dev-cli/cmd.Version=${{ github.ref_name }}'" -o dev${{ matrix.ext }} main.go
 
       - name: Archive binary
         run: |
