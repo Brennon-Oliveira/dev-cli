@@ -1,32 +1,72 @@
-name: Release
+name: Build and Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    strategy:
+      matrix:
+        include:
+          - os: linux-amd64
+            goos: linux
+            goarch: amd64
+            ext: ''
+            archive: tar.gz
+          - os: linux-arm64
+            goos: linux
+            goarch: arm64
+            ext: ''
+            archive: tar.gz
+          - os: macos-amd64
+            goos: darwin
+            goarch: amd64
+            ext: ''
+            archive: tar.gz
+          - os: macos-arm64
+            goos: darwin
+            goarch: arm64
+            ext: ''
+            archive: tar.gz
+          - os: windows-amd64
+            goos: windows
+            goarch: amd64
+            ext: '.exe'
+            archive: zip
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: 'stable'
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
 
-    - name: Build
-      run: go build -v -o dev main.go
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -v -o dev${{ matrix.ext }} main.go
 
-    - name: Test
-      run: go test -v ./...
+      - name: Archive binary
+        run: |
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            zip dev-${{ matrix.os }}.zip dev${{ matrix.ext }}
+          else
+            tar -czvf dev-${{ matrix.os }}.tar.gz dev${{ matrix.ext }}
+          fi
 
-    - name: Upload Release Asset
-      uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: dev
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Draft Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            *.zip
+            *.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
