@@ -36,9 +36,9 @@ func getWorkspaceFolder(absPath string) string {
 	return fmt.Sprintf("/workspaces/%s", filepath.Base(absPath))
 }
 
-func GetContainerURI(absPath string) string {
+// GetHostPath resolve o caminho real considerando o ambiente WSL
+func GetHostPath(absPath string) string {
 	hostPath := absPath
-
 	if _, isWSL := os.LookupEnv("WSL_DISTRO_NAME"); isWSL {
 		cmd := exec.Command("wslpath", "-w", absPath)
 		var out bytes.Buffer
@@ -47,11 +47,14 @@ func GetContainerURI(absPath string) string {
 			hostPath = strings.TrimSpace(out.String())
 		}
 	}
+	return hostPath
+}
 
+func GetContainerURI(absPath string) string {
+	hostPath := GetHostPath(absPath)
 	hexPath := hex.EncodeToString([]byte(hostPath))
 	containerPath := getWorkspaceFolder(absPath)
 
-	// Validação para garantir que a URI termine sempre com "//"
 	if strings.HasSuffix(containerPath, "/") && !strings.HasSuffix(containerPath, "//") {
 		containerPath += "/"
 	} else if !strings.HasSuffix(containerPath, "/") {

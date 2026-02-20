@@ -96,17 +96,115 @@ func ListPorts(path string) error {
 	return cmd.Run()
 }
 
-func KillContainer(path string) error {
-	filter := fmt.Sprintf("label=devcontainer.local_folder=%s", path)
-	idCmd := exec.Command("docker", "ps", "-q", "--filter", filter)
-	out, _ := idCmd.Output()
-	id := strings.TrimSpace(string(out))
+func getContainerIDs(path string) (string, error) {
+	pathsToTry := []string{path}
 
-	if id == "" {
-		return fmt.Errorf("nenhum container ativo encontrado para o caminho: %s", path)
+	// Tenta filtrar tanto pelo path nativo quanto pelo path convertido (WSL -> Windows)
+	hostPath := GetHostPath(path)
+	if hostPath != path {
+		pathsToTry = append(pathsToTry, hostPath)
 	}
 
-	fmt.Printf("Encerrando container: %s\n", id[:12])
-	cmd := exec.Command("docker", "kill", id)
+	for _, p := range pathsToTry {
+		filter := fmt.Sprintf("label=devcontainer.local_folder=%s", p)
+		cmd := exec.Command("docker", "ps", "-q", "--filter", filter)
+		out, _ := cmd.Output()
+		id := strings.TrimSpace(string(out))
+
+		if id != "" {
+			id = strings.ReplaceAll(id, "\r\n", " ")
+			id = strings.ReplaceAll(id, "\n", " ")
+			return id, nil
+		}
+	}
+
+	return "", fmt.Errorf("nenhum container ativo encontrado para o caminho: %s", path)
+}
+
+func getAllRelatedContainers(path string) ([]string, error) {
+	pathsToTry := []string{path}
+
+	hostPath := GetHostPath(path)
+	if hostPath != path {
+		pathsToTry = append(pathsToTry, hostPath)
+	}
+
+	var mainIDs []string
+	for _, p := range pathsToTry {
+		filter := fmt.Sprintf("label=devcontainer.local_folder=%s", p)
+		// Usa -a para pegar containers que já estão parados, garantindo que o rm exclua tudo
+		cmd := exec.Command("docker", "ps", "-a", "-q", "--filter", filter)
+		out, _ := cmd.Output()
+		idStr := strings.TrimSpace(string(out))
+		if idStr != "" {
+			idStr = strings.ReplaceAll(idStr, "\r\n", "\n")
+			mainIDs = strings.Split(idStr, "\n")
+			break
+		}
+	}
+
+	if len(mainIDs) == 0 {
+		return nil, fmt.Errorf("nenhum container encontrado para o caminho: %s", path)
+	}
+
+	allIDsMap := make(map[string]bool)
+	for _, id := range mainIDs {
+		allIDsMap[id] = true
+
+		// Verifica se o container principal pertence a um compose
+		cmd := exec.Command("docker", "inspect", "-f", `{{ if .Config.Labels }}{{ index .Config.Labels "com.docker.compose.project" }}{{ end }}`, id)
+		out, _ := cmd.Output()
+		project := strings.TrimSpace(string(out))
+
+		if project != "" && project != "<no value>" {
+			// Busca todos os containers amarrados a este projeto do compose
+			filter := fmt.Sprintf("label=com.docker.compose.project=%s", project)
+			cmd = exec.Command("docker", "ps", "-a", "-q", "--filter", filter)
+			out2, _ := cmd.Output()
+			compIDsStr := strings.TrimSpace(string(out2))
+			if compIDsStr != "" {
+				compIDsStr = strings.ReplaceAll(compIDsStr, "\r\n", "\n")
+				for _, cid := range strings.Split(compIDsStr, "\n") {
+					allIDsMap[cid] = true
+				}
+			}
+		}
+	}
+
+	var finalIDs []string
+	for id := range allIDsMap {
+		if id != "" {
+			finalIDs = append(finalIDs, id)
+		}
+	}
+
+	return finalIDs, nil
+}
+
+func KillContainer(path string) error {
+	ids, err := getAllRelatedContainers(path)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Forçando parada e excluindo (rm -f) o(s) container(s):\n%s\n", strings.Join(ids, "\n"))
+	args := append([]string{"rm", "-f"}, ids...)
+	cmd := exec.Command("docker", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func DownContainer(path string) error {
+	ids, err := getAllRelatedContainers(path)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Parando graciosamente (stop) o(s) container(s):\n%s\n", strings.Join(ids, "\n"))
+	args := append([]string{"stop"}, ids...)
+	cmd := exec.Command("docker", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
