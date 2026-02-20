@@ -8,6 +8,7 @@ import (
 var runCmd = &cobra.Command{
 	Use:   "run [caminho]",
 	Short: "Sobe o container e abre o VS Code",
+	Long:  "Executa a rotina completa de inicialização: provisiona o container (equivalente ao 'up') e imediatamente anexa o VS Code ao ambiente remoto. Resolve dinamicamente o workspaceFolder e contorna falhas de URI em ambientes como WSL.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := ""

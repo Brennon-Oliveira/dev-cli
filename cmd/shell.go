@@ -8,6 +8,7 @@ import (
 var shellCmd = &cobra.Command{
 	Use:   "shell [caminho]",
 	Short: "Abre um shell interativo dentro do container",
+	Long:  "Aloca um TTY e injeta uma sessão de terminal interativa no container ativo, detectando e priorizando automaticamente o uso de zsh, bash ou sh, conforme a disponibilidade no sistema de arquivos remoto.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := ""

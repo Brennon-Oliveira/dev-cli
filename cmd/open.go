@@ -10,6 +10,7 @@ import (
 var openCmd = &cobra.Command{
 	Use:   "open [caminho]",
 	Short: "Abre o VS Code no container",
+	Long:  "Abre o VS Code conectado a um dev container já em execução. Utiliza resolução dinâmica de URIs para forçar a montagem exata da raiz do projeto, independente da profundidade do diretório definido nas configurações.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := ""

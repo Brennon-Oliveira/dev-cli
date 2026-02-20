@@ -10,6 +10,7 @@ var follow bool
 var logsCmd = &cobra.Command{
 	Use:   "logs [caminho]",
 	Short: "Exibe os logs do container do workspace",
+	Long:  "Exibe o stream de saída padrão (stdout/stderr) do container ativo. Utilizado para diagnóstico e debug de falhas de provisionamento, scripts de entrypoint ou da aplicação interna rodando em background.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := ""

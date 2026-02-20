@@ -10,6 +10,7 @@ var execPath string
 var execCmd = &cobra.Command{
 	Use:                "exec [comando] [args...]",
 	Short:              "Executa um comando específico dentro do container",
+	Long:               "Repassa instruções e argumentos para execução direta no contexto isolado do container ativo. O repasse de flags e parâmetros ocorre de forma transparente ao processo interno.",
 	Args:               cobra.MinimumNArgs(1),
 	DisableFlagParsing: false,
 	RunE: func(cmd *cobra.Command, args []string) error {

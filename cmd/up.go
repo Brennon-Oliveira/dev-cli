@@ -10,6 +10,7 @@ import (
 var upCmd = &cobra.Command{
 	Use:   "up [caminho]",
 	Short: "Apenas sobe o devcontainer",
+	Long:  "Provisiona e inicia o dev container associado ao diretório atual em segundo plano (background). Executa o build da imagem e aplica as configurações do devcontainer.json sem instanciar a interface gráfica do VS Code.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := ""

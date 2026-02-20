@@ -8,6 +8,7 @@ import (
 var portsCmd = &cobra.Command{
 	Use:   "ports [caminho]",
 	Short: "Lista as portas mapeadas do container",
+	Long:  "Inspeciona as interfaces de rede do Docker e exibe o mapeamento ativo de portas e protocolos expostos/bindados entre a máquina host e a rede isolada do container do workspace atual.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := ""
