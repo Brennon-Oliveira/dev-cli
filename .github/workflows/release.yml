@@ -14,26 +14,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: linux-amd64-deb
+          - os: linux-amd64
             goos: linux
             goarch: amd64
             ext: ''
             archive: tar.gz
-          - os: linux-arm64-deb
+          - os: linux-arm64
             goos: linux
             goarch: arm64
             ext: ''
             archive: tar.gz
-          - os: linux-amd64-rpm
-            goos: linux
-            goarch: amd64
-            ext: ''
-            archive: rpm
-          - os: linux-arm64-rpm
-            goos: linux
-            goarch: arm64
-            ext: ''
-            archive: rpm
           - os: macos-amd64
             goos: darwin
             goarch: amd64
@@ -63,16 +53,12 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: go build -v -ldflags="-X 'github.com/Brennon-Oliveira/dev-cli/cmd.Version=${{ github.ref_name }}'" -o dev${{ matrix.ext }} main.go
 
-      - name: Archive
+      - name: Archive binary
         run: |
           if [ "${{ matrix.archive }}" = "zip" ]; then
             zip dev-${{ matrix.os }}.zip dev${{ matrix.ext }}
-          elif [ "${{ matrix.archive }}" = "tar.gz" ]; then
+          else
             tar -czvf dev-${{ matrix.os }}.tar.gz dev${{ matrix.ext }}
-          elif [ "${{ matrix.archive }}" = "rpm" ]; then
-            curl -sfL https://goswift.io/install.sh | sh
-            go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
-            ARCH=${{ matrix.goarch }} VERSION=${{ github.ref_name }} $(go env GOPATH)/bin/nfpm pkg --packager rpm --target dev-${{ matrix.os }}.rpm
           fi
 
       - name: Upload artifact
@@ -82,7 +68,6 @@ jobs:
           path: |
             *.zip
             *.tar.gz
-            *.rpm
           retention-days: 1
 
   release:
@@ -95,7 +80,7 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Create Draft Release
+      - name: Create Draft Release and Upload Asset
         uses: softprops/action-gh-release@v2
         with:
           draft: true
