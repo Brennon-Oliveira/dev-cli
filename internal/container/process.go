@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/Brennon-Oliveira/dev-cli/internal/config"
 )
 
 func ExecDetached(name string, args ...string) error {
@@ -39,16 +41,18 @@ func RunInteractive(path string, command []string) error {
 }
 
 func ListContainers() error {
+	tool := config.Load().Core.Tool
 	format := "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Label \"devcontainer.local_folder\"}}"
-	cmd := exec.Command("docker", "ps", "--filter", "label=devcontainer.local_folder", "--format", format)
+	cmd := exec.Command(tool, "ps", "--filter", "label=devcontainer.local_folder", "--format", format)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 func ShowLogs(path string, follow bool) error {
+	tool := config.Load().Core.Tool
 	filter := fmt.Sprintf("label=devcontainer.local_folder=%s", path)
-	idCmd := exec.Command("docker", "ps", "-q", "--filter", filter)
+	idCmd := exec.Command(tool, "ps", "-q", "--filter", filter)
 	out, _ := idCmd.Output()
 	id := strings.TrimSpace(string(out))
 
@@ -62,26 +66,28 @@ func ShowLogs(path string, follow bool) error {
 	}
 	args = append(args, id)
 
-	cmd := exec.Command("docker", args...)
+	cmd := exec.Command(tool, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 func CleanResources() error {
+	tool := config.Load().Core.Tool
 	fmt.Println("Removendo containers parados...")
-	exec.Command("docker", "container", "prune", "-f").Run()
+	exec.Command(tool, "container", "prune", "-f").Run()
 
 	fmt.Println("Removendo redes não utilizadas...")
-	exec.Command("docker", "network", "prune", "-f").Run()
+	exec.Command(tool, "network", "prune", "-f").Run()
 
 	fmt.Println("Limpeza concluída.")
 	return nil
 }
 
 func ListPorts(path string) error {
+	tool := config.Load().Core.Tool
 	filter := fmt.Sprintf("label=devcontainer.local_folder=%s", path)
-	idCmd := exec.Command("docker", "ps", "-q", "--filter", filter)
+	idCmd := exec.Command(tool, "ps", "-q", "--filter", filter)
 	out, _ := idCmd.Output()
 	id := strings.TrimSpace(string(out))
 
@@ -90,13 +96,14 @@ func ListPorts(path string) error {
 	}
 
 	fmt.Printf("Portas mapeadas para o container (%s):\n", id[:12])
-	cmd := exec.Command("docker", "port", id)
+	cmd := exec.Command(tool, "port", id)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 func getContainerIDs(path string) (string, error) {
+	tool := config.Load().Core.Tool
 	pathsToTry := []string{path}
 
 	// Tenta filtrar tanto pelo path nativo quanto pelo path convertido (WSL -> Windows)
@@ -107,7 +114,7 @@ func getContainerIDs(path string) (string, error) {
 
 	for _, p := range pathsToTry {
 		filter := fmt.Sprintf("label=devcontainer.local_folder=%s", p)
-		cmd := exec.Command("docker", "ps", "-q", "--filter", filter)
+		cmd := exec.Command(tool, "ps", "-q", "--filter", filter)
 		out, _ := cmd.Output()
 		id := strings.TrimSpace(string(out))
 
@@ -122,6 +129,7 @@ func getContainerIDs(path string) (string, error) {
 }
 
 func getAllRelatedContainers(path string) ([]string, error) {
+	tool := config.Load().Core.Tool
 	pathsToTry := []string{path}
 
 	hostPath := GetHostPath(path)
@@ -133,7 +141,7 @@ func getAllRelatedContainers(path string) ([]string, error) {
 	for _, p := range pathsToTry {
 		filter := fmt.Sprintf("label=devcontainer.local_folder=%s", p)
 		// Usa -a para pegar containers que já estão parados, garantindo que o rm exclua tudo
-		cmd := exec.Command("docker", "ps", "-a", "-q", "--filter", filter)
+		cmd := exec.Command(tool, "ps", "-a", "-q", "--filter", filter)
 		out, _ := cmd.Output()
 		idStr := strings.TrimSpace(string(out))
 		if idStr != "" {
@@ -152,14 +160,14 @@ func getAllRelatedContainers(path string) ([]string, error) {
 		allIDsMap[id] = true
 
 		// Verifica se o container principal pertence a um compose
-		cmd := exec.Command("docker", "inspect", "-f", `{{ if .Config.Labels }}{{ index .Config.Labels "com.docker.compose.project" }}{{ end }}`, id)
+		cmd := exec.Command(tool, "inspect", "-f", `{{ if .Config.Labels }}{{ index .Config.Labels "com.docker.compose.project" }}{{ end }}`, id)
 		out, _ := cmd.Output()
 		project := strings.TrimSpace(string(out))
 
 		if project != "" && project != "<no value>" {
 			// Busca todos os containers amarrados a este projeto do compose
 			filter := fmt.Sprintf("label=com.docker.compose.project=%s", project)
-			cmd = exec.Command("docker", "ps", "-a", "-q", "--filter", filter)
+			cmd = exec.Command(tool, "ps", "-a", "-q", "--filter", filter)
 			out2, _ := cmd.Output()
 			compIDsStr := strings.TrimSpace(string(out2))
 			if compIDsStr != "" {
@@ -182,6 +190,7 @@ func getAllRelatedContainers(path string) ([]string, error) {
 }
 
 func KillContainer(path string) error {
+	tool := config.Load().Core.Tool
 	ids, err := getAllRelatedContainers(path)
 	if err != nil {
 		return err
@@ -189,13 +198,14 @@ func KillContainer(path string) error {
 
 	fmt.Printf("Forçando parada e excluindo (rm -f) o(s) container(s):\n%s\n", strings.Join(ids, "\n"))
 	args := append([]string{"rm", "-f"}, ids...)
-	cmd := exec.Command("docker", args...)
+	cmd := exec.Command(tool, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 func DownContainer(path string) error {
+	tool := config.Load().Core.Tool
 	ids, err := getAllRelatedContainers(path)
 	if err != nil {
 		return err
@@ -203,7 +213,7 @@ func DownContainer(path string) error {
 
 	fmt.Printf("Parando graciosamente (stop) o(s) container(s):\n%s\n", strings.Join(ids, "\n"))
 	args := append([]string{"stop"}, ids...)
-	cmd := exec.Command("docker", args...)
+	cmd := exec.Command(tool, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

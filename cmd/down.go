@@ -7,8 +7,8 @@ import (
 
 var downCmd = &cobra.Command{
 	Use:   "down [caminho]",
-	Short: "Para graciosamente o container do workspace atual (docker stop)",
-	Long:  "Executa a parada graciosa (docker stop) do container principal e de todos os serviços secundários (bancos de dados, caches, etc.) vinculados à mesma stack do Docker Compose, mantendo os containers intactos para reinício rápido.",
+	Short: "Para graciosamente o container do workspace atual",
+	Long:  "Executa a parada graciosa do container principal e de todos os serviços secundários (bancos de dados, caches, etc.) vinculados à mesma stack do composer do Motor de containers, mantendo os containers intactos para reinício rápido.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := ""
