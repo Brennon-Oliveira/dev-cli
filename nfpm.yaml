@@ -1,0 +1,12 @@
+name: "dev"
+arch: "${ARCH}"
+platform: "linux"
+version: "${VERSION}"
+section: "default"
+priority: "extra"
+maintainer: "Brennon Oliveira <https://github.com/Brennon-Oliveira>"
+description: "CLI para gerenciamento de Dev Containers"
+license: "MIT"
+contents:
+  - src: "dev"
+    dst: "/usr/bin/dev"
