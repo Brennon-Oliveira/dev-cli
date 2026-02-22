@@ -33,7 +33,7 @@ func getWorkspaceFolder(absPath string) string {
 		}
 	}
 
-	return fmt.Sprintf("/workspaces/%s", filepath.Base(absPath))
+	return "/workspaces"
 }
 
 // GetHostPath resolve o caminho real considerando o ambiente WSL
