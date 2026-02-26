@@ -55,11 +55,15 @@ func GetContainerURI(absPath string) string {
 	hexPath := hex.EncodeToString([]byte(hostPath))
 	containerPath := getWorkspaceFolder(absPath)
 
-	if strings.HasSuffix(containerPath, "/") && !strings.HasSuffix(containerPath, "//") {
+	if strings.HasSuffix(containerPath, "workspaces/") {
 		containerPath += "/"
-	} else if !strings.HasSuffix(containerPath, "/") {
+	} else if !strings.HasSuffix(containerPath, "workspaces") {
 		containerPath += "//"
 	}
 
-	return fmt.Sprintf("vscode-remote://dev-container+%s%s", hexPath, containerPath)
+	final := fmt.Sprintf("vscode-remote://dev-container+%s%s", hexPath, containerPath)
+
+	fmt.Println(final)
+
+	return final
 }
