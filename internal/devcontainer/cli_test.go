@@ -28,7 +28,7 @@ func TestDevContainerCLIImpl_Up(t *testing.T) {
 
 func TestDevContainerCLIImpl_UpWithError(t *testing.T) {
 	mock := exec.NewMockExecutor()
-	mock.RunErr = errors.New("build failed")
+	mock.CombinedOutErr = errors.New("build failed")
 	cli := NewDevContainerCLI(mock)
 
 	err := cli.Up("/workspace/project")

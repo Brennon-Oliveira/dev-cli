@@ -18,8 +18,7 @@ func GetContainerURI(absPath string, workspaceFolder string) string {
 		containerPath = constants.DefaultWorkspaceFolder
 	}
 
-	if strings.HasSuffix(containerPath, "workspaces/") {
-		containerPath += "/"
+	if strings.HasSuffix(containerPath, "/") {
 	} else if !strings.HasSuffix(containerPath, "workspaces") {
 		containerPath += "//"
 	}

@@ -22,8 +22,12 @@ func (d *DockerClient) GetAllRelatedContainers(path string) ([]string, error) {
 		filter := fmt.Sprintf("label=%s=%s", constants.LabelDevContainerFolder, p)
 		logs.Verbose("executando: %s ps -a -q --filter %s", d.tool, filter)
 
-		out, err := d.executor.Output(d.tool, "ps", "-a", "-q", "--filter", filter)
+		args := d.buildArgs("ps", "-a", "-q", "--filter", filter)
+		out, err := d.executor.Output(args[0], args[1:]...)
 		if err != nil {
+			if permErr := wrapPermissionError(err); permErr != err {
+				return nil, permErr
+			}
 			continue
 		}
 
@@ -55,7 +59,8 @@ func (d *DockerClient) GetAllRelatedContainers(path string) ([]string, error) {
 			filter := fmt.Sprintf("label=%s=%s", constants.LabelComposeProject, project)
 			logs.Verbose("executando: %s ps -a -q --filter %s", d.tool, filter)
 
-			out, err := d.executor.Output(d.tool, "ps", "-a", "-q", "--filter", filter)
+			args := d.buildArgs("ps", "-a", "-q", "--filter", filter)
+			out, err := d.executor.Output(args[0], args[1:]...)
 			if err != nil {
 				continue
 			}

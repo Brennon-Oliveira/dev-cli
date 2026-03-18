@@ -12,7 +12,9 @@ func (d *DockerClient) ListContainers() error {
 	logs.Info("Listando containers de desenvolvimento")
 	format := "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Label \"devcontainer.local_folder\"}}"
 	logs.Verbose("executando: %s ps --filter label=%s --format ...", d.tool, constants.LabelDevContainerFolder)
-	return d.executor.Run(d.tool, "ps", "--filter", "label="+constants.LabelDevContainerFolder, "--format", format)
+
+	args := d.buildArgs("ps", "--filter", "label="+constants.LabelDevContainerFolder, "--format", format)
+	return wrapPermissionError(d.executor.Run(args[0], args[1:]...))
 }
 
 func (d *DockerClient) ShowLogs(path string, follow bool) error {
@@ -23,14 +25,15 @@ func (d *DockerClient) ShowLogs(path string, follow bool) error {
 
 	logs.Info("Exibindo logs do container %s", id[:12])
 
-	args := []string{"logs"}
+	dockerArgs := []string{"logs"}
 	if follow {
-		args = append(args, "-f")
+		dockerArgs = append(dockerArgs, "-f")
 	}
-	args = append(args, id)
+	dockerArgs = append(dockerArgs, id)
 
-	logs.Verbose("executando: %s %s", d.tool, strings.Join(args, " "))
-	return d.executor.Run(d.tool, args...)
+	logs.Verbose("executando: %s %s", d.tool, strings.Join(dockerArgs, " "))
+	args := d.buildArgs(dockerArgs...)
+	return wrapPermissionError(d.executor.Run(args[0], args[1:]...))
 }
 
 func (d *DockerClient) ListPorts(path string) error {
@@ -41,19 +44,25 @@ func (d *DockerClient) ListPorts(path string) error {
 
 	logs.Info("Portas mapeadas para o container %s", id[:12])
 	logs.Verbose("executando: %s port %s", d.tool, id)
-	return d.executor.Run(d.tool, "port", id)
+
+	args := d.buildArgs("port", id)
+	return wrapPermissionError(d.executor.Run(args[0], args[1:]...))
 }
 
 func (d *DockerClient) CleanResources() error {
 	logs.Info("Removendo containers parados")
 	logs.Verbose("executando: %s container prune -f", d.tool)
-	if err := d.executor.Run(d.tool, "container", "prune", "-f"); err != nil {
+
+	args := d.buildArgs("container", "prune", "-f")
+	if err := wrapPermissionError(d.executor.Run(args[0], args[1:]...)); err != nil {
 		return fmt.Errorf("falha ao remover containers parados: %w", err)
 	}
 
 	logs.Info("Removendo redes não utilizadas")
 	logs.Verbose("executando: %s network prune -f", d.tool)
-	if err := d.executor.Run(d.tool, "network", "prune", "-f"); err != nil {
+
+	args = d.buildArgs("network", "prune", "-f")
+	if err := wrapPermissionError(d.executor.Run(args[0], args[1:]...)); err != nil {
 		return fmt.Errorf("falha ao remover redes: %w", err)
 	}
 
@@ -71,9 +80,10 @@ func (d *DockerClient) StopContainers(ids []string) error {
 		logs.Verbose("  - %s", id)
 	}
 
-	args := append([]string{"stop"}, ids...)
-	logs.Verbose("executando: %s %s", d.tool, strings.Join(args, " "))
-	return d.executor.Run(d.tool, args...)
+	dockerArgs := append([]string{"stop"}, ids...)
+	logs.Verbose("executando: %s %s", d.tool, strings.Join(dockerArgs, " "))
+	args := d.buildArgs(dockerArgs...)
+	return wrapPermissionError(d.executor.Run(args[0], args[1:]...))
 }
 
 func (d *DockerClient) RemoveContainers(ids []string) error {
@@ -86,7 +96,8 @@ func (d *DockerClient) RemoveContainers(ids []string) error {
 		logs.Verbose("  - %s", id)
 	}
 
-	args := append([]string{"rm", "-f"}, ids...)
-	logs.Verbose("executando: %s %s", d.tool, strings.Join(args, " "))
-	return d.executor.Run(d.tool, args...)
+	dockerArgs := append([]string{"rm", "-f"}, ids...)
+	logs.Verbose("executando: %s %s", d.tool, strings.Join(dockerArgs, " "))
+	args := d.buildArgs(dockerArgs...)
+	return wrapPermissionError(d.executor.Run(args[0], args[1:]...))
 }

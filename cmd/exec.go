@@ -1,7 +1,9 @@
 package cmd
 
 import (
-	"github.com/Brennon-Oliveira/dev-cli/internal/container"
+	"github.com/Brennon-Oliveira/dev-cli/internal/devcontainer"
+	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
+	"github.com/Brennon-Oliveira/dev-cli/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -14,9 +16,15 @@ var execCmd = &cobra.Command{
 	Args:               cobra.MinimumNArgs(1),
 	DisableFlagParsing: false,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		absPath, _ := container.GetAbsPath(execPath)
+		absPath, err := paths.GetAbsPath(execPath)
+		if err != nil {
+			return err
+		}
 
-		return container.RunInteractive(absPath, args)
+		executor := exec.NewExecutor()
+		devCli := devcontainer.NewDevContainerCLI(executor)
+
+		return devCli.Exec(absPath, args)
 	},
 }
 

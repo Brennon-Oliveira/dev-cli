@@ -21,8 +21,12 @@ func (d *DockerClient) GetContainerID(path string) (string, error) {
 		filter := fmt.Sprintf("label=%s=%s", constants.LabelDevContainerFolder, p)
 		logs.Verbose("executando: %s ps -q --filter %s", d.tool, filter)
 
-		out, err := d.executor.Output(d.tool, "ps", "-q", "--filter", filter)
+		args := d.buildArgs("ps", "-q", "--filter", filter)
+		out, err := d.executor.Output(args[0], args[1:]...)
 		if err != nil {
+			if permErr := wrapPermissionError(err); permErr != err {
+				return "", permErr
+			}
 			continue
 		}
 
@@ -45,9 +49,10 @@ func (d *DockerClient) InspectLabel(id, label string) (string, error) {
 	format := fmt.Sprintf("{{ if .Config.Labels }}{{ index .Config.Labels %q }}{{ end }}", label)
 	logs.Verbose("executando: %s inspect -f '%s' %s", d.tool, format, id)
 
-	out, err := d.executor.Output(d.tool, "inspect", "-f", format, id)
+	args := d.buildArgs("inspect", "-f", format, id)
+	out, err := d.executor.Output(args[0], args[1:]...)
 	if err != nil {
-		return "", err
+		return "", wrapPermissionError(err)
 	}
 
 	return strings.TrimSpace(out), nil

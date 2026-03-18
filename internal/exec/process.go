@@ -38,3 +38,9 @@ func (e *RealExecutor) Output(name string, args ...string) (string, error) {
 	out, err := cmd.Output()
 	return string(out), err
 }
+
+func (e *RealExecutor) CombinedOutput(name string, args ...string) (string, error) {
+	cmd := exec.Command(name, args...)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}

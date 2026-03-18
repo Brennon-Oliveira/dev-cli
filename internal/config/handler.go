@@ -1,6 +1,10 @@
 package config
 
-import "github.com/Brennon-Oliveira/dev-cli/internal/constants"
+import (
+	"fmt"
+
+	"github.com/Brennon-Oliveira/dev-cli/internal/constants"
+)
 
 type ConfigHandler struct {
 	ValidValues []string
@@ -18,6 +22,16 @@ var Handlers = map[string]ConfigHandler{
 		},
 		Set: func(cfg *GlobalConfig, val string) {
 			cfg.Core.Tool = val
+		},
+	},
+	"core.use-sudo": {
+		ValidValues: constants.ValidBoolValues,
+		Label:       "Usar sudo para comandos Docker/Podman?",
+		Get: func(cfg GlobalConfig) string {
+			return fmt.Sprintf("%v", cfg.Core.UseSudo)
+		},
+		Set: func(cfg *GlobalConfig, val string) {
+			cfg.Core.UseSudo = val == "true"
 		},
 	},
 }

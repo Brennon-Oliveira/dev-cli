@@ -9,7 +9,7 @@ import (
 
 func TestDockerClient_ListContainers(t *testing.T) {
 	mockExec := exec.NewMockExecutor()
-	client := NewDockerClient("docker", mockExec)
+	client := NewDockerClient("docker", false, mockExec)
 
 	err := client.ListContainers()
 	if err != nil {
@@ -23,7 +23,7 @@ func TestDockerClient_ListContainers(t *testing.T) {
 
 func TestDockerClient_CleanResources(t *testing.T) {
 	mockExec := exec.NewMockExecutor()
-	client := NewDockerClient("docker", mockExec)
+	client := NewDockerClient("docker", false, mockExec)
 
 	err := client.CleanResources()
 	if err != nil {
@@ -38,7 +38,7 @@ func TestDockerClient_CleanResources(t *testing.T) {
 func TestDockerClient_CleanResources_Error(t *testing.T) {
 	mockExec := exec.NewMockExecutor()
 	mockExec.RunErr = errors.New("prune failed")
-	client := NewDockerClient("docker", mockExec)
+	client := NewDockerClient("docker", false, mockExec)
 
 	err := client.CleanResources()
 	if err == nil {
@@ -48,7 +48,7 @@ func TestDockerClient_CleanResources_Error(t *testing.T) {
 
 func TestDockerClient_StopContainers(t *testing.T) {
 	mockExec := exec.NewMockExecutor()
-	client := NewDockerClient("docker", mockExec)
+	client := NewDockerClient("docker", false, mockExec)
 
 	err := client.StopContainers([]string{"id1", "id2"})
 	if err != nil {
@@ -62,7 +62,7 @@ func TestDockerClient_StopContainers(t *testing.T) {
 
 func TestDockerClient_StopContainers_Empty(t *testing.T) {
 	mockExec := exec.NewMockExecutor()
-	client := NewDockerClient("docker", mockExec)
+	client := NewDockerClient("docker", false, mockExec)
 
 	err := client.StopContainers([]string{})
 	if err != nil {
@@ -76,7 +76,7 @@ func TestDockerClient_StopContainers_Empty(t *testing.T) {
 
 func TestDockerClient_RemoveContainers(t *testing.T) {
 	mockExec := exec.NewMockExecutor()
-	client := NewDockerClient("docker", mockExec)
+	client := NewDockerClient("docker", false, mockExec)
 
 	err := client.RemoveContainers([]string{"id1"})
 	if err != nil {

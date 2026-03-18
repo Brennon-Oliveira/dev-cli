@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/Brennon-Oliveira/dev-cli/internal/config"
 	"github.com/Brennon-Oliveira/dev-cli/internal/devcontainer"
 	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
 	"github.com/Brennon-Oliveira/dev-cli/internal/logs"
@@ -26,7 +25,6 @@ var runCmd = &cobra.Command{
 		}
 
 		executor := exec.NewExecutor()
-		cfg := config.Load()
 		devCli := devcontainer.NewDevContainerCLI(executor)
 
 		if err := devCli.Up(absPath); err != nil {

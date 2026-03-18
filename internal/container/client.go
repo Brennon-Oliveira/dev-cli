@@ -1,6 +1,14 @@
 package container
 
-import "github.com/Brennon-Oliveira/dev-cli/internal/exec"
+import (
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
+)
+
+var ErrPermissionDenied = errors.New("permissão negada ao acessar Docker/Podman")
 
 type ContainerClient interface {
 	ListContainers() error
@@ -15,28 +23,52 @@ type ContainerClient interface {
 
 type DockerClient struct {
 	tool     string
+	useSudo  bool
 	executor exec.Executor
 }
 
-func NewDockerClient(tool string, executor exec.Executor) *DockerClient {
+func NewDockerClient(tool string, useSudo bool, executor exec.Executor) *DockerClient {
 	return &DockerClient{
 		tool:     tool,
+		useSudo:  useSudo,
 		executor: executor,
 	}
 }
 
+func (d *DockerClient) buildArgs(args ...string) []string {
+	if d.useSudo {
+		return append([]string{"sudo", d.tool}, args...)
+	}
+	return append([]string{d.tool}, args...)
+}
+
+func wrapPermissionError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	errStr := err.Error()
+	if strings.Contains(errStr, "permission denied") ||
+		strings.Contains(errStr, "Permission denied") ||
+		strings.Contains(errStr, "Cannot connect to the Docker daemon") {
+		return fmt.Errorf("%w\n\nDica: execute 'dev config core.use-sudo true --global' para usar sudo", ErrPermissionDenied)
+	}
+
+	return err
+}
+
 type MockContainerClient struct {
-	ListContainersErr       error
-	GetContainerIDResult    string
-	GetContainerIDErr       error
-	GetAllRelatedResult     []string
-	GetAllRelatedErr        error
-	StopContainersErr       error
-	RemoveContainersErr     error
-	ShowLogsErr             error
-	ListPortsErr            error
-	CleanResourcesErr       error
-	Calls                   []string
+	ListContainersErr    error
+	GetContainerIDResult string
+	GetContainerIDErr    error
+	GetAllRelatedResult  []string
+	GetAllRelatedErr     error
+	StopContainersErr    error
+	RemoveContainersErr  error
+	ShowLogsErr          error
+	ListPortsErr         error
+	CleanResourcesErr    error
+	Calls                []string
 }
 
 func NewMockContainerClient() *MockContainerClient {

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/Brennon-Oliveira/dev-cli/internal/config"
-	"github.com/Brennon-Oliveira/dev-cli/internal/config/handler"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +19,7 @@ var configCmd = &cobra.Command{
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if len(args) == 0 {
 			var keys []string
-			for k := range handler.Handlers {
+			for k := range config.Handlers {
 				if strings.HasPrefix(k, toComplete) {
 					keys = append(keys, k)
 				}
@@ -30,7 +29,7 @@ var configCmd = &cobra.Command{
 
 		if len(args) == 1 {
 			key := args[0]
-			if h, exists := handler.Handlers[key]; exists {
+			if h, exists := config.Handlers[key]; exists {
 				var values []string
 				for _, v := range h.ValidValues {
 					if strings.HasPrefix(v, toComplete) {
@@ -55,10 +54,10 @@ var configCmd = &cobra.Command{
 		}
 
 		key := args[0]
-		h, exists := handler.Handlers[key]
+		h, exists := config.Handlers[key]
 		if !exists {
 			var keys []string
-			for k := range handler.Handlers {
+			for k := range config.Handlers {
 				keys = append(keys, fmt.Sprintf("* %s", k))
 			}
 			return fmt.Errorf("chave desconhecida: %s.\n\nChaves suportadas:\n%s", key, strings.Join(keys, "\n"))

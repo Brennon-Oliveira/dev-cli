@@ -4,7 +4,6 @@ import (
 	"github.com/Brennon-Oliveira/dev-cli/internal/config"
 	"github.com/Brennon-Oliveira/dev-cli/internal/container"
 	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
-	"github.com/Brennon-Oliveira/dev-cli/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +14,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		executor := exec.NewExecutor()
 		cfg := config.Load()
-		client := container.NewDockerClient(cfg.Core.Tool, executor)
+		client := container.NewDockerClient(cfg.Core.Tool, cfg.Core.UseSudo, executor)
 
 		return client.ListContainers()
 	},

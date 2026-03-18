@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetContainerURI_DefaultWorkspace(t *testing.T) {
+	os.Unsetenv("WSL_DISTRO_NAME")
 	absPath := "/tmp/project"
 	uri := GetContainerURI(absPath, "")
 
@@ -19,6 +20,7 @@ func TestGetContainerURI_DefaultWorkspace(t *testing.T) {
 }
 
 func TestGetContainerURI_CustomWorkspace(t *testing.T) {
+	os.Unsetenv("WSL_DISTRO_NAME")
 	absPath := "/tmp/project"
 	uri := GetContainerURI(absPath, "/workspace/custom")
 
@@ -31,6 +33,7 @@ func TestGetContainerURI_CustomWorkspace(t *testing.T) {
 }
 
 func TestGetContainerURI_WorkspaceWithTrailingSlash(t *testing.T) {
+	os.Unsetenv("WSL_DISTRO_NAME")
 	absPath := "/tmp/project"
 	uri := GetContainerURI(absPath, "/workspaces/")
 

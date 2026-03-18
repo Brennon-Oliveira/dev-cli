@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/Brennon-Oliveira/dev-cli/internal/config"
 	"github.com/Brennon-Oliveira/dev-cli/internal/devcontainer"
 	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
 	"github.com/Brennon-Oliveira/dev-cli/internal/logs"

@@ -17,3 +17,5 @@ const (
 )
 
 var ValidTools = []string{ToolDocker, ToolPodman}
+
+var ValidBoolValues = []string{"true", "false"}

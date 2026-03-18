@@ -10,7 +10,8 @@ import (
 
 type GlobalConfig struct {
 	Core struct {
-		Tool string `json:"tool"`
+		Tool    string `json:"tool"`
+		UseSudo bool   `json:"useSudo"`
 	} `json:"core"`
 }
 

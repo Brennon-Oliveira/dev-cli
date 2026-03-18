@@ -27,7 +27,7 @@ var logsCmd = &cobra.Command{
 
 		executor := exec.NewExecutor()
 		cfg := config.Load()
-		client := container.NewDockerClient(cfg.Core.Tool, executor)
+		client := container.NewDockerClient(cfg.Core.Tool, cfg.Core.UseSudo, executor)
 
 		return client.ShowLogs(absPath, follow)
 	},
