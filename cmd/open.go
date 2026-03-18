@@ -1,9 +1,12 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/Brennon-Oliveira/dev-cli/internal/container"
+	"github.com/Brennon-Oliveira/dev-cli/internal/config"
+	"github.com/Brennon-Oliveira/dev-cli/internal/devcontainer"
+	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
+	"github.com/Brennon-Oliveira/dev-cli/internal/logs"
+	"github.com/Brennon-Oliveira/dev-cli/internal/paths"
+	"github.com/Brennon-Oliveira/dev-cli/internal/vscode"
 	"github.com/spf13/cobra"
 )
 
@@ -18,10 +21,24 @@ var openCmd = &cobra.Command{
 			path = args[0]
 		}
 
-		absPath, _ := container.GetAbsPath(path)
-		uri := container.GetContainerURI(absPath)
-		fmt.Printf("Abrindo VS Code...\n")
-		return container.ExecDetached("code", "--folder-uri", uri)
+		absPath, err := paths.GetAbsPath(path)
+		if err != nil {
+			return err
+		}
+
+		executor := exec.NewExecutor()
+		devCli := devcontainer.NewDevContainerCLI(executor)
+
+		workspaceConfig, err := devCli.ReadConfiguration(absPath)
+		if err != nil {
+			return err
+		}
+
+		uri := vscode.GetContainerURI(absPath, workspaceConfig.WorkspaceFolder)
+		logs.Info("Abrindo VS Code...")
+		logs.Verbose("executando: code --folder-uri %s", uri)
+
+		return executor.RunDetached("code", "--folder-uri", uri)
 	},
 }
 

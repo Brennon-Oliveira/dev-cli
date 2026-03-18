@@ -1,10 +1,8 @@
 //go:build windows
 
-package container
+package exec
 
-import (
-	"os/exec"
-)
+import "os/exec"
 
 func applyDetachedAttr(cmd *exec.Cmd) {
 }

@@ -5,32 +5,13 @@ import (
 	"strings"
 
 	"github.com/Brennon-Oliveira/dev-cli/internal/config"
+	"github.com/Brennon-Oliveira/dev-cli/internal/config/handler"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
 var globalFlag bool
 var interactiveFlag bool
-
-type configHandler struct {
-	ValidValues []string
-	Label       string
-	Get         func(cfg config.GlobalConfig) string
-	Set         func(cfg *config.GlobalConfig, val string)
-}
-
-var handlers = map[string]configHandler{
-	"core.tool": {
-		ValidValues: []string{"docker", "podman"},
-		Label:       "Selecione o motor de containers padrão",
-		Get: func(cfg config.GlobalConfig) string {
-			return cfg.Core.Tool
-		},
-		Set: func(cfg *config.GlobalConfig, val string) {
-			cfg.Core.Tool = val
-		},
-	},
-}
 
 var configCmd = &cobra.Command{
 	Use:          "config [chave] [valor]",
@@ -39,7 +20,7 @@ var configCmd = &cobra.Command{
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if len(args) == 0 {
 			var keys []string
-			for k := range handlers {
+			for k := range handler.Handlers {
 				if strings.HasPrefix(k, toComplete) {
 					keys = append(keys, k)
 				}
@@ -49,9 +30,9 @@ var configCmd = &cobra.Command{
 
 		if len(args) == 1 {
 			key := args[0]
-			if handler, exists := handlers[key]; exists {
+			if h, exists := handler.Handlers[key]; exists {
 				var values []string
-				for _, v := range handler.ValidValues {
+				for _, v := range h.ValidValues {
 					if strings.HasPrefix(v, toComplete) {
 						values = append(values, v)
 					}
@@ -74,10 +55,10 @@ var configCmd = &cobra.Command{
 		}
 
 		key := args[0]
-		handler, exists := handlers[key]
+		h, exists := handler.Handlers[key]
 		if !exists {
 			var keys []string
-			for k := range handlers {
+			for k := range handler.Handlers {
 				keys = append(keys, fmt.Sprintf("* %s", k))
 			}
 			return fmt.Errorf("chave desconhecida: %s.\n\nChaves suportadas:\n%s", key, strings.Join(keys, "\n"))
@@ -87,8 +68,8 @@ var configCmd = &cobra.Command{
 
 		if interactiveFlag {
 			prompt := promptui.Select{
-				Label: handler.Label,
-				Items: handler.ValidValues,
+				Label: h.Label,
+				Items: h.ValidValues,
 			}
 
 			_, result, err := prompt.Run()
@@ -96,7 +77,7 @@ var configCmd = &cobra.Command{
 				return fmt.Errorf("seleção cancelada: %v", err)
 			}
 
-			handler.Set(&cfg, result)
+			h.Set(&cfg, result)
 			if err := config.Save(cfg); err != nil {
 				return fmt.Errorf("erro ao salvar configuração: %v", err)
 			}
@@ -110,7 +91,7 @@ var configCmd = &cobra.Command{
 
 			isValid := false
 			var optionsList []string
-			for _, validVal := range handler.ValidValues {
+			for _, validVal := range h.ValidValues {
 				optionsList = append(optionsList, fmt.Sprintf("* %s", validVal))
 				if val == validVal {
 					isValid = true
@@ -121,7 +102,7 @@ var configCmd = &cobra.Command{
 				return fmt.Errorf("valor inválido para '%s'.\n\nOpções permitidas:\n%s", key, strings.Join(optionsList, "\n"))
 			}
 
-			handler.Set(&cfg, val)
+			h.Set(&cfg, val)
 			if err := config.Save(cfg); err != nil {
 				return fmt.Errorf("erro ao salvar configuração: %v", err)
 			}
@@ -130,7 +111,7 @@ var configCmd = &cobra.Command{
 			return nil
 		}
 
-		fmt.Println(handler.Get(cfg))
+		fmt.Println(h.Get(cfg))
 		return nil
 	},
 }

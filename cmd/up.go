@@ -1,9 +1,11 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/Brennon-Oliveira/dev-cli/internal/container"
+	"github.com/Brennon-Oliveira/dev-cli/internal/config"
+	"github.com/Brennon-Oliveira/dev-cli/internal/devcontainer"
+	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
+	"github.com/Brennon-Oliveira/dev-cli/internal/logs"
+	"github.com/Brennon-Oliveira/dev-cli/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -18,9 +20,19 @@ var upCmd = &cobra.Command{
 			path = args[0]
 		}
 
-		absPath, _ := container.GetAbsPath(path)
-		fmt.Printf("Subindo container em: %s\n", absPath)
-		return container.RunUpSync(absPath)
+		absPath, err := paths.GetAbsPath(path)
+		if err != nil {
+			return err
+		}
+
+		logs.Info("Subindo container em: %s", absPath)
+
+		executor := exec.NewExecutor()
+		cfg := config.Load()
+		devCli := devcontainer.NewDevContainerCLI(executor)
+
+		logs.Debug("usando tool: %s", cfg.Core.Tool)
+		return devCli.Up(absPath)
 	},
 }
 

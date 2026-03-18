@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/Brennon-Oliveira/dev-cli/internal/constants"
 )
 
 type GlobalConfig struct {
@@ -17,12 +19,12 @@ func getConfigPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".dev-cli", "config.json"), nil
+	return filepath.Join(home, constants.ConfigDirName, constants.ConfigFileName), nil
 }
 
 func Load() GlobalConfig {
 	cfg := GlobalConfig{}
-	cfg.Core.Tool = "docker"
+	cfg.Core.Tool = constants.ToolDocker
 
 	path, err := getConfigPath()
 	if err != nil {
@@ -35,7 +37,7 @@ func Load() GlobalConfig {
 	}
 
 	if cfg.Core.Tool == "" {
-		cfg.Core.Tool = "docker"
+		cfg.Core.Tool = constants.ToolDocker
 	}
 
 	return cfg

@@ -3,10 +3,12 @@ package cmd
 import (
 	"os"
 
+	"github.com/Brennon-Oliveira/dev-cli/internal/logs"
 	"github.com/spf13/cobra"
 )
 
 var Version = "dev"
+var verboseFlag bool
 
 var rootCmd = &cobra.Command{
 	Use:     "dev",
@@ -32,7 +34,12 @@ Ele permite provisionar, acessar e destruir ambientes de desenvolvimento isolado
 	SilenceUsage: true,
 }
 
+func init() {
+	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Exibe logs detalhados")
+}
+
 func Execute() {
+	logs.SetVerbose(verboseFlag)
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
