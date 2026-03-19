@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/Brennon-Oliveira/dev-cli/internal/config"
+	"github.com/Brennon-Oliveira/dev-cli/internal-old/config"
 )
 
 func ExecDetached(name string, args ...string) error {

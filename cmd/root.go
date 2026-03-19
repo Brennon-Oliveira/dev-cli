@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/Brennon-Oliveira/dev-cli/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +33,18 @@ Ele permite provisionar, acessar e destruir ambientes de desenvolvimento isolado
 	SilenceUsage: true,
 }
 
+func initLogger() {
+	logger.InitLogger(nil)
+	var verboseFlag bool
+	rootCmd.Flags().BoolVar(&verboseFlag, "verbose", false, "Roda o comando em modo verbose (mostra todos os logs executados por baixo dos panos)")
+	if verboseFlag {
+		logger.SetVerbose(verboseFlag)
+	}
+	logger.SetOutput(os.Stdout)
+}
+
 func Execute() {
+	initLogger()
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)

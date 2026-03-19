@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Brennon-Oliveira/dev-cli/internal/config"
+	"github.com/Brennon-Oliveira/dev-cli/internal-old/config"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
