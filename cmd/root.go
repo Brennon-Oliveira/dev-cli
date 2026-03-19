@@ -9,6 +9,8 @@ import (
 
 var Version = "dev"
 
+var verboseFlag bool
+
 var rootCmd = &cobra.Command{
 	Use:     "dev",
 	Short:   "CLI para gerenciar Dev Containers",
@@ -31,16 +33,17 @@ Ele permite provisionar, acessar e destruir ambientes de desenvolvimento isolado
   # Derruba e exclui o container e todos os serviços acoplados
   dev kill .`,
 	SilenceUsage: true,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		logger.SetVerbose(verboseFlag)
+	},
 }
 
 func initLogger() {
-	logger.InitLogger(nil)
-	var verboseFlag bool
-	rootCmd.Flags().BoolVar(&verboseFlag, "verbose", false, "Roda o comando em modo verbose (mostra todos os logs executados por baixo dos panos)")
-	if verboseFlag {
-		logger.SetVerbose(verboseFlag)
-	}
-	logger.SetOutput(os.Stdout)
+	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Roda o comando em modo verbose (mostra todos os logs executados por baixo dos panos)")
+	logger.InitLogger(
+		logger.WithVerbose(verboseFlag),
+		logger.WithWriter(os.Stdout),
+	)
 }
 
 func Execute() {

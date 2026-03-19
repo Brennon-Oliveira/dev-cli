@@ -1,33 +1,15 @@
 package logger
 
 import (
-	"bytes"
 	"fmt"
 	"io"
-	"os"
+
+	loggerutils "github.com/Brennon-Oliveira/dev-cli/internal/logger/logger_utils"
 )
-
-type realLogger struct {
-	verbose bool
-	output  io.Writer
-}
-
-func NewLogger() *realLogger {
-	return &realLogger{
-		output: os.Stdout,
-	}
-}
-
-func InitLogger(customLogger Logger) {
-	if customLogger != nil {
-		logger = customLogger
-		return
-	}
-	logger = NewLogger()
-}
 
 func (l *realLogger) SetVerbose(verbose bool) {
 	l.verbose = verbose
+	l.w.SetAllowWriting(verbose)
 }
 
 func SetVerbose(verbose bool) {
@@ -35,7 +17,7 @@ func SetVerbose(verbose bool) {
 }
 
 func (l *realLogger) SetOutput(writer io.Writer) {
-	l.output = writer
+	l.w = NewLoggerWriter(writer, l.verbose)
 }
 
 func SetOutput(writer io.Writer) {
@@ -43,44 +25,74 @@ func SetOutput(writer io.Writer) {
 }
 
 func (l *realLogger) Info(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(l.output, "\x1b[36m\x1b[1m➜\x1b[0m %s\n", msg)
+	var msg string
+	if len(args) > 0 {
+		msg = fmt.Sprintf(format, args...)
+	} else {
+		msg = format
+	}
+	fmt.Fprintf(l.w.dest, "%s%s➜%s %s\n", loggerutils.RegularCyanColor, loggerutils.BoldStyle, loggerutils.ResetColor, msg)
 }
 
 func Info(format string, args ...any) {
-	logger.Info(format, args)
+	logger.Info(format, args...)
 }
 
 func (l *realLogger) Verbose(format string, args ...any) {
 	if !l.verbose {
 		return
 	}
-	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(l.output, "\x1b[90m  │ %s\x1b[0m\n", msg)
+	var msg string
+	if len(args) > 0 {
+		msg = fmt.Sprintf(format, args...)
+	} else {
+		msg = format
+	}
+	fmt.Fprintf(l.w.dest, "%s  │ %s%s\n", loggerutils.HighIntensityBlackColor, msg, loggerutils.ResetColor)
 }
 
 func Verbose(format string, args ...any) {
 	logger.Verbose(format, args...)
 }
 
-func (l *realLogger) VerboseFromOutput(output *io.Reader) {
+func (l *realLogger) VerboseFromOutput(output io.Reader) {
 	if !l.verbose {
 		return
 	}
-	bytes := bytes.Buffer{}
-	bytes.WriteString("\x1b[90m  │ ")
-	io.Copy(&bytes, *output)
-	bytes.WriteString("\x1b[0m\n")
-	l.output.Write(bytes.Bytes())
+
+	fmt.Fprintf(l.w.dest, "%s  │ ", loggerutils.HighIntensityBackgroundBlackColor)
+
+	io.Copy(l.w.dest, output)
+
+	fmt.Fprintf(l.w.dest, "%s\n", loggerutils.ResetColor)
 }
 
-func VerboseFromOutput(output *io.Reader) {
+func (l *realLogger) Debug(format string, args ...any) {
+	var msg string
+	if len(args) > 0 {
+		msg = fmt.Sprintf(format, args...)
+	} else {
+		msg = format
+	}
+	fmt.Fprintf(l.w.dest, "%s%s➜ %s%s\n", loggerutils.RegularBlueColor, loggerutils.BoldStyle, msg, loggerutils.ResetColor)
+}
+
+func Debug(format string, args ...any) {
+	logger.Debug(format, args...)
+}
+
+func VerboseFromOutput(output io.Reader) {
 	logger.VerboseFromOutput(output)
 }
 
 func (l *realLogger) Success(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(l.output, "\x1b[32m✓\x1b[0m %s\n", msg)
+	var msg string
+	if len(args) > 0 {
+		msg = fmt.Sprintf(format, args...)
+	} else {
+		msg = format
+	}
+	fmt.Fprintf(l.w.dest, "%s✓ %s%s\n", loggerutils.RegularGreenColor, msg, loggerutils.ResetColor)
 }
 
 func Success(format string, args ...any) {
@@ -88,8 +100,13 @@ func Success(format string, args ...any) {
 }
 
 func (l *realLogger) Warn(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(l.output, "\x1b[33m⚠ %s\x1b[0m\n", msg)
+	var msg string
+	if len(args) > 0 {
+		msg = fmt.Sprintf(format, args...)
+	} else {
+		msg = format
+	}
+	fmt.Fprintf(l.w, "%s⚠ %s%s\n", loggerutils.RegularYellowColor, msg, loggerutils.ResetColor)
 }
 
 func Warn(format string, args ...any) {
@@ -97,10 +114,23 @@ func Warn(format string, args ...any) {
 }
 
 func (l *realLogger) Error(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(l.output, "\x1b[31m✗ %s\x1b[0m\n", msg)
+	var msg string
+	if len(args) > 0 {
+		msg = fmt.Sprintf(format, args...)
+	} else {
+		msg = format
+	}
+	fmt.Fprintf(l.w, "%s✗ %s%s\n", loggerutils.RegularRedColor, msg, loggerutils.ResetColor)
 }
 
 func Error(format string, args ...any) {
 	logger.Error(format, args...)
+}
+
+func (l *realLogger) GetWriter() io.Writer {
+	return l.w
+}
+
+func GetWriter() io.Writer {
+	return logger.GetWriter()
 }
