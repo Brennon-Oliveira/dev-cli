@@ -37,7 +37,7 @@ func formatWorkspaceFolderSuffix(containerPath string) string {
 	if strings.HasSuffix(containerPath, "workspaces/") {
 		return containerPath + "/"
 	}
-	if !strings.HasSuffix(containerPath, "workspaces") {
+	if strings.HasSuffix(containerPath, "workspaces") {
 		return containerPath + "//"
 	}
 	return containerPath

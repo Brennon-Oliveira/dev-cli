@@ -113,3 +113,136 @@ func TestReadConfiguration_ThrowErrorIfNotAbleToUnmarshal(t *testing.T) {
 	var syntaxErr *json.SyntaxError
 	assert.ErrorAs(t, err, &syntaxErr)
 }
+
+func TestFormatWorkspaceFolderSuffix_FixPathWithOneSlash(t *testing.T) {
+	path := "/tmp/workspaces/"
+
+	got := formatWorkspaceFolderSuffix(path)
+
+	assert.Equal(t, "/tmp/workspaces//", got)
+}
+
+func TestFormatWorkspaceFolderSuffix_FixPathWithNo(t *testing.T) {
+	path := "/tmp/workspaces"
+
+	got := formatWorkspaceFolderSuffix(path)
+
+	assert.Equal(t, "/tmp/workspaces//", got)
+}
+
+func TestFormatWorkspaceFolderSuffix_FixPathWithOtherSuffix(t *testing.T) {
+	path := "/tmp/workspaces/app"
+
+	got := formatWorkspaceFolderSuffix(path)
+
+	assert.Equal(t, "/tmp/workspaces/app", got)
+}
+
+func TestGetWorkspaceFolder_GetWorkspaceWithValueDefault(t *testing.T) {
+	r := require.New(t)
+	workspace := "/tmp/workspace"
+
+	configMock := &DevContainerConfiguration{
+		Workspace: DevContainerConfiguration_Workspace{
+			WorkspaceFolder: "/workspaces/my-project",
+		},
+	}
+
+	configJsonRaw, err := json.Marshal(configMock)
+	r.Nil(err)
+
+	executor := exec.NewMockExecutor(t)
+
+	executor.EXPECT().Output(mock.Anything, mock.Anything).RunAndReturn(func(name string, args ...string) ([]byte, error) {
+		if assert.Contains(t, args, workspace) {
+			return configJsonRaw, nil
+		}
+		return []byte{}, fmt.Errorf("workspace dir not passed")
+	})
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	got, err := devcontainerCLI.GetWorkspaceFolder(workspace)
+	r.Nil(err)
+	assert.Equal(t, "/workspaces/my-project", got)
+}
+
+func TestGetWorkspaceFolder_GetWorkspaceWithValueWorkspaces(t *testing.T) {
+	r := require.New(t)
+	workspace := "/tmp/workspace"
+
+	configMock := &DevContainerConfiguration{
+		Workspace: DevContainerConfiguration_Workspace{
+			WorkspaceFolder: "/workspaces",
+		},
+	}
+
+	configJsonRaw, err := json.Marshal(configMock)
+	r.Nil(err)
+
+	executor := exec.NewMockExecutor(t)
+
+	executor.EXPECT().Output(mock.Anything, mock.Anything).RunAndReturn(func(name string, args ...string) ([]byte, error) {
+		if assert.Contains(t, args, workspace) {
+			return configJsonRaw, nil
+		}
+		return []byte{}, fmt.Errorf("workspace dir not passed")
+	})
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	got, err := devcontainerCLI.GetWorkspaceFolder(workspace)
+	r.Nil(err)
+	assert.Equal(t, "/workspaces//", got)
+}
+
+func TestGetWorkspaceFolder_GetWorkspaceWithNoValue(t *testing.T) {
+	r := require.New(t)
+	workspace := "/tmp/workspace"
+
+	configMock := &DevContainerConfiguration{
+		Workspace: DevContainerConfiguration_Workspace{
+			WorkspaceFolder: "",
+		},
+	}
+
+	configJsonRaw, err := json.Marshal(configMock)
+	r.Nil(err)
+
+	executor := exec.NewMockExecutor(t)
+
+	executor.EXPECT().Output(mock.Anything, mock.Anything).RunAndReturn(func(name string, args ...string) ([]byte, error) {
+		if assert.Contains(t, args, workspace) {
+			return configJsonRaw, nil
+		}
+		return []byte{}, fmt.Errorf("workspace dir not passed")
+	})
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	got, err := devcontainerCLI.GetWorkspaceFolder(workspace)
+	r.Nil(err)
+	assert.Equal(t, "/workspaces//", got)
+}
+
+func TestGetWorkspaceFolder_GetWorkspaceWithError(t *testing.T) {
+	workspace := "/tmp/workspace"
+	executor := exec.NewMockExecutor(t)
+
+	executor.EXPECT().Output(mock.Anything, mock.Anything).Return([]byte{}, fmt.Errorf("generic error"))
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	got, err := devcontainerCLI.GetWorkspaceFolder(workspace)
+
+	assert.ErrorContains(t, err, "generic error")
+	assert.Equal(t, "/workspaces//", got)
+}
