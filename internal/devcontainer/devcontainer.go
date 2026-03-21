@@ -6,8 +6,10 @@ type DevContainerCLI interface {
 	ReadConfiguration(absPath string) (*DevContainerConfiguration, error)
 }
 
+type DevContainerConfiguration_Workspace struct {
+	WorkspaceFolder string `json:"workspaceFolder"`
+}
+
 type DevContainerConfiguration struct {
-	Workspace struct {
-		WorkspaceFolder string `json:"workspaceFolder"`
-	} `json:"workspace"`
+	Workspace DevContainerConfiguration_Workspace `json:"workspace"`
 }

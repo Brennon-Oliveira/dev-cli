@@ -1,18 +1,21 @@
 package pather
 
-import "github.com/Brennon-Oliveira/dev-cli/internal/exec"
+import (
+	"github.com/Brennon-Oliveira/dev-cli/internal/env"
+	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
+)
 
 type realPather struct {
 	executor  exec.Executor
-	lookupEnv LookupEnv
+	lookupEnv env.LookupEnvFunc
 }
-
-type LookupEnv func(key string) (string, bool)
 
 type Option func(*realPather)
 
 func NewPather(opts ...Option) *realPather {
-	p := &realPather{}
+	p := &realPather{
+		lookupEnv: env.LookupEnv,
+	}
 
 	for _, opt := range opts {
 		opt(p)
@@ -27,7 +30,7 @@ func WithExecutor(e exec.Executor) Option {
 	}
 }
 
-func WithLookupEnv(l LookupEnv) Option {
+func WithLookupEnv(l env.LookupEnvFunc) Option {
 	return func(p *realPather) {
 		p.lookupEnv = l
 	}

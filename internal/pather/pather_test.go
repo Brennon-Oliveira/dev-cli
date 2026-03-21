@@ -98,10 +98,17 @@ func TestGetPathFromArgs_AbsolutePath(t *testing.T) {
 	assert.Equal(t, path, got)
 }
 
-func TestGetRealPath_NoWSLReturnsOriginal(t *testing.T) {
+func lookupEnvInWslMock(key string) (string, bool) {
+	if key == "WSL_DISTRO_NAME" {
+		return "Ubuntu", true
+	}
+	return "", false
+}
+
+func TestGetRealPath_WSLReturnsCorrect(t *testing.T) {
 	r := require.New(t)
-	t.Setenv("WSL_DISTRO_NAME", "")
 	wslPath := "/tmp/wsl"
+	t.Setenv("WSL_DISTRO_NAME", "Ubuntu")
 	path := "/tmp/my-project"
 	fullPath := wslPath + path
 
@@ -113,9 +120,36 @@ func TestGetRealPath_NoWSLReturnsOriginal(t *testing.T) {
 
 	pather := NewPather(
 		WithExecutor(executor),
+		WithLookupEnv(lookupEnvInWslMock),
 	)
 
 	got, err := pather.GetRealPath(path)
 	r.Nil(err)
 	assert.Equal(t, fullPath, got)
+}
+
+func lookupEnvOutWslMock(key string) (string, bool) {
+	if key == "WSL_DISTRO_NAME" {
+		return "", false
+	}
+	return "", true
+}
+
+func TestGetRealPath_NoWSLReturnsOriginal(t *testing.T) {
+	r := require.New(t)
+	t.Setenv("WSL_DISTRO_NAME", "")
+	path := "/tmp/my-project"
+
+	executor := exec.NewMockExecutor(t)
+
+	executor.AssertNotCalled(t, "RunWithOutput")
+
+	pather := NewPather(
+		WithExecutor(executor),
+		WithLookupEnv(lookupEnvOutWslMock),
+	)
+
+	got, err := pather.GetRealPath(path)
+	r.Nil(err)
+	assert.Equal(t, path, got)
 }

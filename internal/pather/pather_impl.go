@@ -2,7 +2,6 @@ package pather
 
 import (
 	"bytes"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -23,7 +22,7 @@ func (p *realPather) GetPathFromArgs(args []string) string {
 }
 
 func (p *realPather) GetRealPath(absPath string) (string, error) {
-	if _, isWSL := os.LookupEnv("WSL_DISTRO_NAME"); !isWSL {
+	if _, isWSL := p.lookupEnv("WSL_DISTRO_NAME"); !isWSL {
 		return absPath, nil
 	}
 	var out bytes.Buffer
