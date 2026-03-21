@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"fmt"
 	"io"
 	"os/exec"
 	"strings"
@@ -16,6 +17,8 @@ func (e *realExecutor) Run(name string, args ...string) error {
 
 	err := cmd.Run()
 	logger.Verbose("---")
+
+	fmt.Printf("%s %s %s %s", name, args[0], args[1], args[2])
 
 	return err
 }

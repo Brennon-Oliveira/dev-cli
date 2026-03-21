@@ -106,7 +106,7 @@ func (l *realLogger) Warn(format string, args ...any) {
 	} else {
 		msg = format
 	}
-	fmt.Fprintf(l.w, "%s⚠ %s%s\n", loggerutils.RegularYellowColor, msg, loggerutils.ResetColor)
+	fmt.Fprintf(l.w.dest, "%s⚠ %s%s\n", loggerutils.RegularYellowColor, msg, loggerutils.ResetColor)
 }
 
 func Warn(format string, args ...any) {
@@ -120,7 +120,7 @@ func (l *realLogger) Error(format string, args ...any) {
 	} else {
 		msg = format
 	}
-	fmt.Fprintf(l.w, "%s✗ %s%s\n", loggerutils.RegularRedColor, msg, loggerutils.ResetColor)
+	fmt.Fprintf(l.w.dest, "%s✗ %s%s\n", loggerutils.RegularRedColor, msg, loggerutils.ResetColor)
 }
 
 func Error(format string, args ...any) {

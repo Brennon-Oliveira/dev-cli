@@ -19,7 +19,7 @@ func NewLoggerWriter(dest io.Writer, allowWriting bool) *LoggerWriter {
 func (sw *LoggerWriter) Write(p []byte) (n int, err error) {
 
 	if !sw.allowWriting {
-		return 0, nil
+		return len(p), nil
 	}
 
 	fmt.Fprintf(sw.dest, "%s  │ ", loggerutils.HighIntensityBlackColor)
