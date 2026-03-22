@@ -26,3 +26,11 @@ packages:
     config:
       all: true
       filename: executor_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/pather:
+    config:
+      all: true
+      filename: pather_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/devcontainer:
+    config:
+      all: true
+      filename: devcontainer_mocks.go
