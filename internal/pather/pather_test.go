@@ -115,7 +115,11 @@ func TestGetRealPath_WSLReturnsCorrect(t *testing.T) {
 	executor := exec.NewMockExecutor(t)
 
 	executor.EXPECT().RunWithOutput(mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(func(output io.Writer, name string, args ...string) {
-		fmt.Fprint(output, fullPath)
+		if _, err := fmt.Fprint(output, fullPath); err != nil {
+			r.Fail(
+				"fail to insert fullPath to output",
+			)
+		}
 	})
 
 	pather := NewPather(
