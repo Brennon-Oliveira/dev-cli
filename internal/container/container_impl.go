@@ -52,32 +52,18 @@ func (c *realContainerCLI) CleanResources() error {
 func (c *realContainerCLI) GetAllRelatedContainers(path string) ([]string, error) {
 	logger.Info("Procurando containers relacionados ao projeto")
 	tool := c.config.Load().Core.Tool
-	pathsToTry := []string{path}
 
-	realPath, _ := c.pather.GetRealPath(path)
-
-	if realPath != path {
-		pathsToTry = append(pathsToTry, realPath)
-	}
+	pathsToTry := c.resolvePaths(path, c.pather)
 
 	var mainIDs []string
 	for _, p := range pathsToTry {
-		logger.Verbose("Verificando caminho: %s", p)
-		filter := fmt.Sprintf("label=devcontainer.local_folder=%s", p)
-		logger.Verbose("Filtro aplicado: %s", filter)
-
-		out, err := c.executor.Output(tool, "ps", "-a", "-q", "--filter", filter)
+		ids, err := c.findMainContainersForPath(tool, p, c.executor)
 		if err != nil {
-			logger.Error("Houve um erro ao buscar os containers relacionados")
 			return nil, err
 		}
 
-		idStr := strings.TrimSpace(string(out))
-		if idStr != "" {
-			idStr = strings.ReplaceAll(idStr, "\r\n", "\n")
-			mainIDs = strings.Split(idStr, "\n")
-			logger.Verbose("Containers encontrados:")
-			logger.Verbose(idStr)
+		if len(ids) > 0 {
+			mainIDs = ids
 			break
 		}
 	}
@@ -91,53 +77,28 @@ func (c *realContainerCLI) GetAllRelatedContainers(path string) ([]string, error
 	logger.Info("Buscando composes dos containers encontrados")
 	allIDsMap := make(map[string]bool)
 	for _, id := range mainIDs {
-		logger.Verbose("Verificando container '%s'", id)
 		allIDsMap[id] = true
 
-		out, err := c.executor.Output(tool, "inspect", "-f", `{{ if .Config.Labels }}{{ index .Config.Labels "com.docker.compose.project" }}{{ end }}`, id)
+		project, err := c.extractProjectFromContainer(tool, id, c.executor)
 		if err != nil {
-			logger.Error("Houve um erro ao inspecionar o container %s", id)
 			return nil, err
 		}
 
-		project := strings.TrimSpace(string(out))
-
-		if project == "" || project == "<no value>" {
-			logger.Verbose("Sem projeto associado")
+		if project == "" {
 			continue
 		}
 
-		logger.Verbose("Projeto encontrado: %s", project)
-		filter := fmt.Sprintf("label=com.docker.compose.project=%s", project)
-		out, err = c.executor.Output(tool, "ps", "-a", "-q", "--filter", filter)
-
+		compIDs, err := c.findComposeContainersForProject(tool, project, c.executor)
 		if err != nil {
-			logger.Error("Houve um erro ao buscar os containers do projeto %s", project)
 			return nil, err
 		}
 
-		compIDsStr := strings.TrimSpace(string(out))
-
-		if compIDsStr == "" {
-			continue
-		}
-
-		compIDsStr = strings.ReplaceAll(compIDsStr, "\r\n", "\n")
-
-		for _, cid := range strings.Split(compIDsStr, "\n") {
+		for _, cid := range compIDs {
 			allIDsMap[cid] = true
 		}
 	}
 
-	var finalIDs []string
-	for id := range allIDsMap {
-		if id == "" {
-			continue
-		}
-
-		finalIDs = append(finalIDs, id)
-	}
-
+	finalIDs := c.deduplicateAndFilterContainerIDs(allIDsMap)
 	return finalIDs, nil
 }
 

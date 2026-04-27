@@ -8,19 +8,29 @@ import (
 )
 
 type realContainerCLI struct {
-	executor                exec.Executor
-	config                  config.Config
-	pather                  pather.Pather
-	parseContainerOutput    container_utils.ParseContainerOutputFunc
-	formatGroupedContainers container_utils.FormatGroupedContainersFunc
+	executor                         exec.Executor
+	config                           config.Config
+	pather                           pather.Pather
+	parseContainerOutput             container_utils.ParseContainerOutputFunc
+	formatGroupedContainers          container_utils.FormatGroupedContainersFunc
+	resolvePaths                     ResolvePathsFunc
+	findMainContainersForPath        FindMainContainersForPathFunc
+	extractProjectFromContainer      ExtractProjectFromContainerFunc
+	findComposeContainersForProject  FindComposeContainersForProjectFunc
+	deduplicateAndFilterContainerIDs DeduplicateAndFilterContainerIDsFunc
 }
 
 type Option func(*realContainerCLI)
 
 func NewContainerCLI(opts ...Option) *realContainerCLI {
 	c := &realContainerCLI{
-		parseContainerOutput:    container_utils.ParseContainerOutput,
-		formatGroupedContainers: container_utils.FormatGroupedContainers,
+		parseContainerOutput:             container_utils.ParseContainerOutput,
+		formatGroupedContainers:          container_utils.FormatGroupedContainers,
+		resolvePaths:                     container_utils.ResolvePaths,
+		findMainContainersForPath:        container_utils.FindMainContainersForPath,
+		extractProjectFromContainer:      container_utils.ExtractProjectFromContainer,
+		findComposeContainersForProject:  container_utils.FindComposeContainersForProject,
+		deduplicateAndFilterContainerIDs: container_utils.DeduplicateAndFilterContainerIDs,
 	}
 
 	for _, opt := range opts {
@@ -57,5 +67,35 @@ func WithParseContainerOutput(f container_utils.ParseContainerOutputFunc) Option
 func WithFormatGroupedContainers(f container_utils.FormatGroupedContainersFunc) Option {
 	return func(c *realContainerCLI) {
 		c.formatGroupedContainers = f
+	}
+}
+
+func WithResolvePaths(f ResolvePathsFunc) Option {
+	return func(c *realContainerCLI) {
+		c.resolvePaths = f
+	}
+}
+
+func WithFindMainContainersForPath(f FindMainContainersForPathFunc) Option {
+	return func(c *realContainerCLI) {
+		c.findMainContainersForPath = f
+	}
+}
+
+func WithExtractProjectFromContainer(f ExtractProjectFromContainerFunc) Option {
+	return func(c *realContainerCLI) {
+		c.extractProjectFromContainer = f
+	}
+}
+
+func WithFindComposeContainersForProject(f FindComposeContainersForProjectFunc) Option {
+	return func(c *realContainerCLI) {
+		c.findComposeContainersForProject = f
+	}
+}
+
+func WithDeduplicateAndFilterContainerIDs(f DeduplicateAndFilterContainerIDsFunc) Option {
+	return func(c *realContainerCLI) {
+		c.deduplicateAndFilterContainerIDs = f
 	}
 }
