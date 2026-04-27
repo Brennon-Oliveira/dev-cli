@@ -526,7 +526,6 @@ func TestNewContainerCLI_MultipleOptions_AllApplied(t *testing.T) {
 func TestListContainersIntegration_FlowWithRealParsing(t *testing.T) {
 	r := require.New(t)
 
-	// Test data simulating real docker output
 	mockOutput := "f7bc76eda682\tapp_devcontainer-sfa.app-1\tUp 5 minutes\t/home/user/app\n" +
 		"9c88be57f94f\tapp_devcontainer-sfa.db-1\tUp 5 minutes\t"
 
