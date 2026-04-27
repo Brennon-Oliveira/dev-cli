@@ -53,7 +53,7 @@ func (c *realContainerCLI) GetAllRelatedContainers(path string) ([]string, error
 	logger.Info("Procurando containers relacionados ao projeto")
 	tool := c.config.Load().Core.Tool
 
-	pathsToTry := c.resolvePaths(path, c.pather)
+	pathsToTry := c.tryPaths(path, c.pather)
 
 	var mainIDs []string
 	for _, p := range pathsToTry {
@@ -123,4 +123,33 @@ func (c *realContainerCLI) DownContainer(path string) error {
 	logger.Info("%d containers parados com sucesso.", len(ids))
 	return nil
 
+}
+
+func (c *realContainerCLI) RunInteractive(path string, command string) error {
+
+	tool := "devcontainer"
+
+	commandToExecute := strings.Split(command, " ")
+
+	baseCommand := []string{"exec", "--workspace-folder", path}
+
+	finalCommand := append(baseCommand, commandToExecute...)
+
+	logger.Info("Executando comando interativo: %s %s \"%s\"", tool, strings.Join(baseCommand, " "), command)
+
+	out, err := c.executor.Output(tool, finalCommand...)
+
+	if err != nil {
+		if out != nil && string(out) != "" {
+			logger.Error("O comando foi executado, e resultou no erro:\n```\n%s```", string(out))
+			return nil
+		}
+
+		logger.Error("Houve um erro ao executar o comando interativo.")
+		return err
+	}
+
+	logger.Info("O comando foi executado, e resultou na saída:\n```\n%s```", string(out))
+
+	return nil
 }

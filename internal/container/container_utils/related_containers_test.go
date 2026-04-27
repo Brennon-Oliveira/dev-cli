@@ -35,7 +35,7 @@ func TestResolvePaths_SinglePathNoRealPathDifference(t *testing.T) {
 	mockPather := new(mockPather)
 	mockPather.On("GetRealPath", "/home/user/app").Return("/home/user/app", nil)
 
-	paths := ResolvePaths("/home/user/app", mockPather)
+	paths := TryPaths("/home/user/app", mockPather)
 
 	r.Len(paths, 1)
 	assert.Equal(t, "/home/user/app", paths[0])
@@ -48,7 +48,7 @@ func TestResolvePaths_SinglePathWithRealPathDifference(t *testing.T) {
 	mockPather := new(mockPather)
 	mockPather.On("GetRealPath", "/home/user/app").Return("/mnt/wsl/app", nil)
 
-	paths := ResolvePaths("/home/user/app", mockPather)
+	paths := TryPaths("/home/user/app", mockPather)
 
 	r.Len(paths, 2)
 	assert.Equal(t, "/home/user/app", paths[0])
@@ -62,7 +62,7 @@ func TestResolvePaths_GetRealPathReturnsError_IgnoresError(t *testing.T) {
 	mockPather := new(mockPather)
 	mockPather.On("GetRealPath", "/home/user/app").Return("/home/user/app", fmt.Errorf("some error"))
 
-	paths := ResolvePaths("/home/user/app", mockPather)
+	paths := TryPaths("/home/user/app", mockPather)
 
 	r.Len(paths, 1)
 	assert.Equal(t, "/home/user/app", paths[0])

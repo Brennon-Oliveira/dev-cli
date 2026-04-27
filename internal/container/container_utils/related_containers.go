@@ -8,13 +8,13 @@ import (
 	"github.com/Brennon-Oliveira/dev-cli/internal/pather"
 )
 
-type ResolvePathsFunc func(path string, pth pather.Pather) []string
+type TryPathsFunc func(path string, pth pather.Pather) []string
 type FindMainContainersForPathFunc func(tool string, p string, executor exec.Executor) ([]string, error)
 type ExtractProjectFromContainerFunc func(tool string, id string, executor exec.Executor) (string, error)
 type FindComposeContainersForProjectFunc func(tool string, project string, executor exec.Executor) ([]string, error)
 type DeduplicateAndFilterContainerIDsFunc func(idMap map[string]bool) []string
 
-func ResolvePaths(path string, pth pather.Pather) []string {
+func TryPaths(path string, pth pather.Pather) []string {
 	pathsToTry := []string{path}
 
 	realPath, _ := pth.GetRealPath(path)
