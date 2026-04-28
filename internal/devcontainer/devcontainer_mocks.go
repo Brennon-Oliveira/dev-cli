@@ -157,6 +157,63 @@ func (_c *MockDevContainerCLI_ReadConfiguration_Call) RunAndReturn(run func(absP
 	return _c
 }
 
+// RunInteractive provides a mock function for the type MockDevContainerCLI
+func (_mock *MockDevContainerCLI) RunInteractive(path string, command string) error {
+	ret := _mock.Called(path, command)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RunInteractive")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = returnFunc(path, command)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockDevContainerCLI_RunInteractive_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RunInteractive'
+type MockDevContainerCLI_RunInteractive_Call struct {
+	*mock.Call
+}
+
+// RunInteractive is a helper method to define mock.On call
+//   - path string
+//   - command string
+func (_e *MockDevContainerCLI_Expecter) RunInteractive(path interface{}, command interface{}) *MockDevContainerCLI_RunInteractive_Call {
+	return &MockDevContainerCLI_RunInteractive_Call{Call: _e.mock.On("RunInteractive", path, command)}
+}
+
+func (_c *MockDevContainerCLI_RunInteractive_Call) Run(run func(path string, command string)) *MockDevContainerCLI_RunInteractive_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockDevContainerCLI_RunInteractive_Call) Return(err error) *MockDevContainerCLI_RunInteractive_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockDevContainerCLI_RunInteractive_Call) RunAndReturn(run func(path string, command string) error) *MockDevContainerCLI_RunInteractive_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Up provides a mock function for the type MockDevContainerCLI
 func (_mock *MockDevContainerCLI) Up(workspace string) error {
 	ret := _mock.Called(workspace)

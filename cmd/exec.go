@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"github.com/Brennon-Oliveira/dev-cli/internal/config"
-	"github.com/Brennon-Oliveira/dev-cli/internal/container"
+	"github.com/Brennon-Oliveira/dev-cli/internal/devcontainer"
 	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
 	"github.com/Brennon-Oliveira/dev-cli/internal/pather"
 	"github.com/spf13/cobra"
@@ -11,15 +10,15 @@ import (
 var execPath string
 
 type execImplParams struct {
-	args      []string
-	pather    pather.Pather
-	container container.ContainerCLI
+	args         []string
+	pather       pather.Pather
+	devcontainer devcontainer.DevContainerCLI
 }
 
 func execImpl(p *execImplParams) error {
 	absPath, _ := p.pather.GetAbsPath(execPath)
 
-	return p.container.RunInteractive(absPath, p.args[0])
+	return p.devcontainer.RunInteractive(absPath, p.args[0])
 }
 
 var execCmd = &cobra.Command{
@@ -33,18 +32,15 @@ var execCmd = &cobra.Command{
 		pather := pather.NewPather(
 			pather.WithExecutor(executor),
 		)
-		config := config.NewConfig()
 
-		container := container.NewContainerCLI(
-			container.WithExecutor(executor),
-			container.WithPather(pather),
-			container.WithConfig(config),
+		devcontainer := devcontainer.NewDevContainerCLI(
+			devcontainer.WithExecutor(executor),
 		)
 
 		return execImpl(&execImplParams{
-			args:      args,
-			pather:    pather,
-			container: container,
+			args:         args,
+			pather:       pather,
+			devcontainer: devcontainer,
 		})
 	},
 }

@@ -125,31 +125,25 @@ func (c *realContainerCLI) DownContainer(path string) error {
 
 }
 
-func (c *realContainerCLI) RunInteractive(path string, command string) error {
+func (c *realContainerCLI) KillContainer(path string) error {
 
-	tool := "devcontainer"
-
-	commandToExecute := strings.Split(command, " ")
-
-	baseCommand := []string{"exec", "--workspace-folder", path}
-
-	finalCommand := append(baseCommand, commandToExecute...)
-
-	logger.Info("Executando comando interativo: %s %s \"%s\"", tool, strings.Join(baseCommand, " "), command)
-
-	out, err := c.executor.Output(tool, finalCommand...)
-
+	tool := c.config.Load().Core.Tool
+	ids, err := c.GetAllRelatedContainers(path)
 	if err != nil {
-		if out != nil && string(out) != "" {
-			logger.Error("O comando foi executado, e resultou no erro:\n```\n%s```", string(out))
-			return nil
-		}
-
-		logger.Error("Houve um erro ao executar o comando interativo.")
 		return err
 	}
 
-	logger.Info("O comando foi executado, e resultou na saída:\n```\n%s```", string(out))
+	logger.Info("Forçando a parada e excluindo (rm -f) o(s) container(s):\n%s", strings.Join(ids, "\n"))
+	args := append([]string{"rm", "-f"}, ids...)
+
+	err = c.executor.Run(tool, args...)
+
+	if err != nil {
+		logger.Error("Não foi possível forçar a parada e remoção dos containers.")
+		return err
+	}
+
+	logger.Info("%d containers removidos com sucesso.", len(ids))
 
 	return nil
 }

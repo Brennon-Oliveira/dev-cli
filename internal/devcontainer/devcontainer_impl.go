@@ -60,3 +60,31 @@ func (d *realDevContainerCLI) GetWorkspaceFolder(absPath string) (string, error)
 
 	return workspaceFolder, nil
 }
+
+func (c *realDevContainerCLI) RunInteractive(path string, command string) error {
+	tool := "devcontainer"
+
+	commandToExecute := strings.Split(command, " ")
+
+	baseCommand := []string{"exec", "--workspace-folder", path}
+
+	finalCommand := append(baseCommand, commandToExecute...)
+
+	logger.Info("Executando comando interativo: %s %s \"%s\"", tool, strings.Join(baseCommand, " "), command)
+
+	out, err := c.executor.Output(tool, finalCommand...)
+
+	if err != nil {
+		if out != nil && string(out) != "" {
+			logger.Error("O comando foi executado, e resultou no erro:\n```\n%s```", string(out))
+			return nil
+		}
+
+		logger.Error("Houve um erro ao executar o comando interativo.")
+		return err
+	}
+
+	logger.Info("O comando foi executado, e resultou na saída:\n```\n%s```", string(out))
+
+	return nil
+}

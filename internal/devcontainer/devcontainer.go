@@ -4,6 +4,7 @@ type DevContainerCLI interface {
 	Up(workspace string) error
 	GetWorkspaceFolder(absPath string) (string, error)
 	ReadConfiguration(absPath string) (*DevContainerConfiguration, error)
+	RunInteractive(path string, command string) error
 }
 
 type DevContainerConfiguration_Workspace struct {

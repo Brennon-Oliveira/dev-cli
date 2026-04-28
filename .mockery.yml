@@ -34,3 +34,11 @@ packages:
     config:
       all: true
       filename: devcontainer_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/container:
+    config:
+      all: true
+      filename: container_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/vscode:
+    config:
+      all: true
+      filename: vscode_mocks.go
