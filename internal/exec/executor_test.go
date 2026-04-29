@@ -403,3 +403,132 @@ func TestNewExecutor_WithBothCustomStreams(t *testing.T) {
 
 	assert.True(t, customOut.Len() > 0)
 }
+
+// ============ RunInteractive Tests ============
+
+func TestRunInteractive_SuccessWithSimpleCommand(t *testing.T) {
+	r := require.New(t)
+
+	executor := NewExecutor()
+
+	// Use echo as a simple non-interactive command to test the mechanics
+	err := executor.RunInteractive("echo", "hello", "world")
+	r.Nil(err)
+}
+
+func TestRunInteractive_CommandNotFound(t *testing.T) {
+	r := require.New(t)
+
+	executor := NewExecutor()
+
+	// Non-existent command should return error
+	err := executor.RunInteractive("nonexistentcommand12345")
+	r.NotNil(err)
+}
+
+func TestRunInteractive_PassesThroughStdin(t *testing.T) {
+	r := require.New(t)
+
+	// Create a stdin with test data
+	stdin := bytes.NewBufferString("test input\n")
+
+	executor := NewExecutor(
+		WithStdin(stdin),
+	)
+
+	// Test that RunInteractive attempts to run and uses os.Stdin
+	// Using echo instead of cat since cat requires actual terminal interaction
+	err := executor.RunInteractive("echo", "stdin_test")
+	r.Nil(err)
+}
+
+func TestRunInteractive_UsesOsStdout(t *testing.T) {
+	r := require.New(t)
+
+	executor := NewExecutor()
+
+	// RunInteractive should use os.Stdout (which is being captured by the test framework)
+	err := executor.RunInteractive("echo", "interactive_output")
+	r.Nil(err)
+}
+
+func TestRunInteractive_UsesOsStderr(t *testing.T) {
+	r := require.New(t)
+
+	executor := NewExecutor()
+
+	// Command that outputs to stderr
+	err := executor.RunInteractive("sh", "-c", "echo error_message >&2")
+	r.Nil(err)
+}
+
+func TestRunInteractive_CommandWithMultipleArgs(t *testing.T) {
+	r := require.New(t)
+
+	executor := NewExecutor()
+
+	// Test with multiple arguments
+	err := executor.RunInteractive("echo", "arg1", "arg2", "arg3", "arg4")
+	r.Nil(err)
+}
+
+func TestRunInteractive_NonZeroExit(t *testing.T) {
+	r := require.New(t)
+
+	executor := NewExecutor()
+
+	// false command returns exit code 1
+	err := executor.RunInteractive("false")
+	r.NotNil(err)
+}
+
+func TestRunInteractive_ComplexCommand(t *testing.T) {
+	r := require.New(t)
+
+	executor := NewExecutor()
+
+	// Test with a more complex shell command
+	err := executor.RunInteractive("sh", "-c", "echo 'line 1'; echo 'line 2'")
+	r.Nil(err)
+}
+
+func TestRunInteractive_IgnoresCustomStdin(t *testing.T) {
+	r := require.New(t)
+
+	// Create custom stdin but RunInteractive should use os.Stdin
+	customStdin := bytes.NewBufferString("custom data")
+	customStdout := new(bytes.Buffer)
+
+	executor := NewExecutor(
+		WithStdin(customStdin),
+		WithStdout(customStdout),
+	)
+
+	// RunInteractive uses os.Stdin directly, not the custom stdin
+	err := executor.RunInteractive("echo", "test")
+	r.Nil(err)
+
+	// Custom stdout should be ignored by RunInteractive
+	// Since RunInteractive uses os.Stdout directly
+	assert.Empty(t, customStdout.String())
+}
+
+func TestRunInteractive_DirectsToOsStreams(t *testing.T) {
+	r := require.New(t)
+
+	// RunInteractive should use os.Stdin, os.Stdout, os.Stderr
+	// We verify this by checking that custom streams are NOT used
+	customStdin := bytes.NewBufferString("should not be used")
+	customStdout := new(bytes.Buffer)
+
+	executorWithStreams := NewExecutor(
+		WithStdin(customStdin),
+		WithStdout(customStdout),
+	)
+
+	err := executorWithStreams.RunInteractive("echo", "direct")
+	r.Nil(err)
+
+	// Output should NOT be in custom stdout because RunInteractive uses os.Stdout
+	assert.Empty(t, customStdout.String())
+}

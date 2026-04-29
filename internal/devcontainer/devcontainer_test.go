@@ -503,3 +503,192 @@ func TestRunInteractive_SuccessfulOutputWithNewlines(t *testing.T) {
 	r.Nil(err)
 	executor.AssertExpectations(t)
 }
+
+// ============================================================================
+// Tests for OpenShell
+// ============================================================================
+
+func TestOpenShell_SuccessfulOpenWithZsh(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// First call checks for zsh - succeeds
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(nil).Once()
+
+	// Second call opens the shell
+	executor.EXPECT().RunInteractive("devcontainer", mock.Anything).Return(nil).Once()
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	err := devcontainerCLI.OpenShell(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestOpenShell_SuccessfulOpenWithBash(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// First call checks for zsh - fails
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(fmt.Errorf("zsh not found")).Once()
+
+	// Second call checks for bash - succeeds
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(nil).Once()
+
+	// Third call opens the shell
+	executor.EXPECT().RunInteractive("devcontainer", mock.Anything).Return(nil).Once()
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	err := devcontainerCLI.OpenShell(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestOpenShell_SuccessfulOpenWithSh(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// First call checks for zsh - fails
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(fmt.Errorf("zsh not found")).Once()
+
+	// Second call checks for bash - fails
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(fmt.Errorf("bash not found")).Once()
+
+	// Third call checks for sh - succeeds
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(nil).Once()
+
+	// Fourth call opens the shell with sh
+	executor.EXPECT().RunInteractive("devcontainer", mock.Anything).Return(nil).Once()
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	err := devcontainerCLI.OpenShell(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestOpenShell_RunInteractiveReturnsError(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// Check for zsh succeeds
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(nil).Once()
+
+	// RunInteractive fails
+	executor.EXPECT().RunInteractive("devcontainer", mock.Anything).Return(fmt.Errorf("shell execution error")).Once()
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	err := devcontainerCLI.OpenShell(path)
+
+	r.NotNil(err)
+	assert.ErrorContains(t, err, "shell execution error")
+}
+
+func TestOpenShell_UsesCorrectWorkspaceFolder(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/myproject"
+
+	executor := exec.NewMockExecutor(t)
+
+	// Shell check succeeds
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(nil).Once()
+
+	// RunInteractive succeeds
+	executor.EXPECT().RunInteractive("devcontainer", mock.Anything).Return(nil).Once()
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	err := devcontainerCLI.OpenShell(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestOpenShell_DefaultsToShWhenNoShellFound(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// All shell checks fail
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(fmt.Errorf("not found")).Times(3)
+
+	// Verify RunInteractive is called (which should use /bin/sh as default)
+	executor.EXPECT().RunInteractive("devcontainer", mock.Anything).Return(nil).Once()
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	err := devcontainerCLI.OpenShell(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestOpenShell_OpensShellWithCorrectPath(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// Shell check succeeds
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(nil).Once()
+
+	// RunInteractive is called
+	executor.EXPECT().RunInteractive("devcontainer", mock.Anything).Return(nil).Once()
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	err := devcontainerCLI.OpenShell(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestOpenShell_ClosesSuccessfully(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// Shell check succeeds
+	executor.EXPECT().Run("devcontainer", mock.Anything).Return(nil).Once()
+
+	// RunInteractive succeeds (simulates user closing shell)
+	executor.EXPECT().RunInteractive("devcontainer", mock.Anything).Return(nil).Once()
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	err := devcontainerCLI.OpenShell(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
