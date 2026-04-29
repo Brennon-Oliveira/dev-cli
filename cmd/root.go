@@ -36,6 +36,9 @@ Ele permite provisionar, acessar e destruir ambientes de desenvolvimento isolado
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		logger.SetVerbose(verboseFlag)
 	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
 }
 
 func initLogger() {
