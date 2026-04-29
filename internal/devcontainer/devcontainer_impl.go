@@ -90,12 +90,26 @@ func (c *realDevContainerCLI) RunInteractive(path string, command string) error 
 }
 
 func (c *realDevContainerCLI) OpenShell(path string) error {
-	commandArgs := []string{"exec", "--workspace-folder", path}
-	shellArgs := append(commandArgs, []string{"/bin/sh", "-c", "if command -v zsh >/dev/null 2>&1; then zsh; elif command -v bash >/dev/null 2>&1; then bash; else sh; fi"}...)
-
 	tool := "devcontainer"
 
-	logger.Info("Abrindo shell interativo")
+	shells := []string{"/bin/zsh", "/bin/bash", "/bin/sh"}
+	var preferredShell string
+
+	for _, shell := range shells {
+		checkCmd := []string{"exec", "--workspace-folder", path, "test", "-x", shell}
+		if c.executor.Run(tool, checkCmd...) == nil {
+			preferredShell = shell
+			break
+		}
+	}
+
+	if preferredShell == "" {
+		preferredShell = "/bin/sh"
+	}
+
+	shellArgs := []string{"exec", "--workspace-folder", path, preferredShell}
+
+	logger.Info("Abrindo shell interativo: %s", preferredShell)
 	logger.Verbose("Abrindo shell interativo com o comando: %s %s", tool, strings.Join(shellArgs, " "))
 
 	err := c.executor.RunInteractive(tool, shellArgs...)

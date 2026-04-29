@@ -57,12 +57,9 @@ func (e *realExecutor) RunDetached(name string, args ...string) error {
 }
 
 func (e *realExecutor) RunInteractive(name string, args ...string) error {
-	in := io.MultiReader(os.Stdin, e.stdin)
-	out := io.MultiWriter(os.Stdout, e.stdout)
-
 	cmd := exec.Command(name, args...)
-	cmd.Stdin = in
-	cmd.Stdout = out
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	logger.Verbose("Rodando interativo: %s", strings.Join(append([]string{name}, args...), " "))
