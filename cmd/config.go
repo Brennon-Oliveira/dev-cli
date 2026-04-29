@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	conf "github.com/Brennon-Oliveira/dev-cli/internal-old/config"
 	"github.com/Brennon-Oliveira/dev-cli/internal/config"
 	"github.com/Brennon-Oliveira/dev-cli/internal/logger"
 	"github.com/spf13/cobra"
@@ -48,26 +47,6 @@ func configImpl(p *configImplParams) error {
 	return nil
 }
 
-type configHandler struct {
-	ValidValues []string
-	Label       string
-	Get         func(cfg conf.GlobalConfig) string
-	Set         func(cfg *conf.GlobalConfig, val string)
-}
-
-var handlers = map[string]configHandler{
-	"core.tool": {
-		ValidValues: []string{"docker", "podman"},
-		Label:       "Selecione o motor de containers padrão",
-		Get: func(cfg conf.GlobalConfig) string {
-			return cfg.Core.Tool
-		},
-		Set: func(cfg *conf.GlobalConfig, val string) {
-			cfg.Core.Tool = val
-		},
-	},
-}
-
 var configCmd = &cobra.Command{
 	Use:          "config [chave] [valor]",
 	Short:        "Gerencia as configurações da CLI",
@@ -75,7 +54,7 @@ var configCmd = &cobra.Command{
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if len(args) == 0 {
 			var keys []string
-			for k := range handlers {
+			for k := range *config.GetHandlers() {
 				if strings.HasPrefix(k, toComplete) {
 					keys = append(keys, k)
 				}
@@ -85,7 +64,7 @@ var configCmd = &cobra.Command{
 
 		if len(args) == 1 {
 			key := args[0]
-			if handler, exists := handlers[key]; exists {
+			if handler, exists := (*config.GetHandlers())[key]; exists {
 				var values []string
 				for _, v := range handler.ValidValues {
 					if strings.HasPrefix(v, toComplete) {
