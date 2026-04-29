@@ -8,19 +8,17 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Download snap artifact
+        uses: dawidd6/action-download-artifact@v6
         with:
-          ref: ${{ github.event.release.tag_name }}
-          fetch-depth: 0
-
-      - name: Build Snap (amd64)
-        uses: snapcore/action-build@v1
-        id: snap-amd64
+          workflow: build.yml
+          commit: ${{ github.event.release.tag_name }}
+          name: snap-amd64
 
       - name: Publish amd64 to Snap Store
         uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
         with:
-          snap: ${{ steps.snap-amd64.outputs.snap }}
+          snap: "*.snap"
           release: stable
