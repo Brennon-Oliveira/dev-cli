@@ -16,28 +16,24 @@ type runImplParams struct {
 	vscode       vscode.VSCode
 }
 
-func runImpl(params *runImplParams) error {
-	args := params.args
-	pather := params.pather
-	devcontainer := params.devcontainer
-	vscode := params.vscode
+func runImpl(p *runImplParams) error {
 	logger.Info("Iniciando projeto")
-	path := pather.GetPathFromArgs(args)
-	absPath, _ := pather.GetAbsPath(path)
+	path := p.pather.GetPathFromArgs(p.args)
+	absPath, _ := p.pather.GetAbsPath(path)
 
 	logger.Verbose("Rodando projeto na pasta %s", absPath)
 
-	if err := devcontainer.Up(absPath); err != nil {
+	if err := p.devcontainer.Up(absPath); err != nil {
 		return err
 	}
 
-	workspaceURI, err := vscode.GetContainerWorkspaceURI(absPath)
+	workspaceURI, err := p.vscode.GetContainerWorkspaceURI(absPath)
 
 	if err != nil {
 		return err
 	}
 
-	return vscode.OpenWorkspaceByURI(workspaceURI)
+	return p.vscode.OpenWorkspaceByURI(workspaceURI)
 }
 
 var runCmd = &cobra.Command{

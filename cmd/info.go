@@ -12,10 +12,8 @@ type infoImplParams struct {
 	container container.ContainerCLI
 }
 
-func infoImpl(params *infoImplParams) error {
-	container := params.container
-
-	return container.ListContainersOfActiveDevcontainers()
+func infoImpl(p *infoImplParams) error {
+	return p.container.ListContainersOfActiveDevcontainers()
 }
 
 var infoCmd = &cobra.Command{
