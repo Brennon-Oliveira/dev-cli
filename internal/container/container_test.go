@@ -9,6 +9,7 @@ import (
 	"github.com/Brennon-Oliveira/dev-cli/internal/container/container_utils"
 	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
 	"github.com/Brennon-Oliveira/dev-cli/internal/logger"
+	"github.com/Brennon-Oliveira/dev-cli/internal/pather"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -542,4 +543,523 @@ func TestListContainersIntegration_FlowWithRealParsing(t *testing.T) {
 	err := containerCLI.ListContainersOfActiveDevcontainers()
 
 	r.Nil(err)
+}
+
+// ============================================================================
+// Tests for KillContainer
+// ============================================================================
+
+func TestKillContainer_SuccessfulKillSingleContainer(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// Mock GetAllRelatedContainers by mocking the helper functions
+	tryPathsFunc := func(p string, pather pather.Pather) []string {
+		return []string{p}
+	}
+	findMainFunc := func(tool, p string, executor exec.Executor) ([]string, error) {
+		return []string{"container123"}, nil
+	}
+	extractProjectFunc := func(tool, id string, executor exec.Executor) (string, error) {
+		return "", nil
+	}
+	findComposeFunc := func(tool, project string, executor exec.Executor) ([]string, error) {
+		return []string{}, nil
+	}
+	dedupeFunc := func(m map[string]bool) []string {
+		var result []string
+		for id := range m {
+			result = append(result, id)
+		}
+		return result
+	}
+
+	// Expect the rm -f call with variadic args
+	executor.EXPECT().Run("docker", mock.Anything).Return(nil)
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+		WithTryPaths(tryPathsFunc),
+		WithFindMainContainersForPath(findMainFunc),
+		WithExtractProjectFromContainer(extractProjectFunc),
+		WithFindComposeContainersForProject(findComposeFunc),
+		WithDeduplicateAndFilterContainerIDs(dedupeFunc),
+	)
+
+	err := containerCLI.KillContainer(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestKillContainer_SuccessfulKillMultipleContainers(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	tryPathsFunc := func(p string, pather pather.Pather) []string {
+		return []string{p}
+	}
+	findMainFunc := func(tool, p string, executor exec.Executor) ([]string, error) {
+		return []string{"container1", "container2", "container3"}, nil
+	}
+	extractProjectFunc := func(tool, id string, executor exec.Executor) (string, error) {
+		return "", nil
+	}
+	findComposeFunc := func(tool, project string, executor exec.Executor) ([]string, error) {
+		return []string{}, nil
+	}
+	dedupeFunc := func(m map[string]bool) []string {
+		var result []string
+		for id := range m {
+			result = append(result, id)
+		}
+		return result
+	}
+
+	executor.EXPECT().Run("docker", mock.Anything).Return(nil)
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+		WithTryPaths(tryPathsFunc),
+		WithFindMainContainersForPath(findMainFunc),
+		WithExtractProjectFromContainer(extractProjectFunc),
+		WithFindComposeContainersForProject(findComposeFunc),
+		WithDeduplicateAndFilterContainerIDs(dedupeFunc),
+	)
+
+	err := containerCLI.KillContainer(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestKillContainer_GetAllRelatedContainersReturnsError(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	tryPathsFunc := func(p string, pather pather.Pather) []string {
+		return []string{p}
+	}
+	findMainFunc := func(tool, p string, executor exec.Executor) ([]string, error) {
+		return nil, fmt.Errorf("container not found")
+	}
+	extractProjectFunc := func(tool, id string, executor exec.Executor) (string, error) {
+		return "", nil
+	}
+	findComposeFunc := func(tool, project string, executor exec.Executor) ([]string, error) {
+		return []string{}, nil
+	}
+	dedupeFunc := func(m map[string]bool) []string {
+		var result []string
+		for id := range m {
+			result = append(result, id)
+		}
+		return result
+	}
+
+	executor.AssertNotCalled(t, "Run")
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+		WithTryPaths(tryPathsFunc),
+		WithFindMainContainersForPath(findMainFunc),
+		WithExtractProjectFromContainer(extractProjectFunc),
+		WithFindComposeContainersForProject(findComposeFunc),
+		WithDeduplicateAndFilterContainerIDs(dedupeFunc),
+	)
+
+	err := containerCLI.KillContainer(path)
+
+	r.NotNil(err)
+	assert.ErrorContains(t, err, "container not found")
+}
+
+func TestKillContainer_ExecutorRunReturnsError(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	tryPathsFunc := func(p string, pather pather.Pather) []string {
+		return []string{p}
+	}
+	findMainFunc := func(tool, p string, executor exec.Executor) ([]string, error) {
+		return []string{"container123"}, nil
+	}
+	extractProjectFunc := func(tool, id string, executor exec.Executor) (string, error) {
+		return "", nil
+	}
+	findComposeFunc := func(tool, project string, executor exec.Executor) ([]string, error) {
+		return []string{}, nil
+	}
+	dedupeFunc := func(m map[string]bool) []string {
+		var result []string
+		for id := range m {
+			result = append(result, id)
+		}
+		return result
+	}
+
+	executor.EXPECT().Run("docker", mock.Anything).Return(fmt.Errorf("docker error"))
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+		WithTryPaths(tryPathsFunc),
+		WithFindMainContainersForPath(findMainFunc),
+		WithExtractProjectFromContainer(extractProjectFunc),
+		WithFindComposeContainersForProject(findComposeFunc),
+		WithDeduplicateAndFilterContainerIDs(dedupeFunc),
+	)
+
+	err := containerCLI.KillContainer(path)
+
+	r.NotNil(err)
+	assert.ErrorContains(t, err, "docker error")
+}
+
+func TestKillContainer_UsesCorrectToolFromConfig(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	tryPathsFunc := func(p string, pather pather.Pather) []string {
+		return []string{p}
+	}
+	findMainFunc := func(tool, p string, executor exec.Executor) ([]string, error) {
+		return []string{"container123"}, nil
+	}
+	extractProjectFunc := func(tool, id string, executor exec.Executor) (string, error) {
+		return "", nil
+	}
+	findComposeFunc := func(tool, project string, executor exec.Executor) ([]string, error) {
+		return []string{}, nil
+	}
+	dedupeFunc := func(m map[string]bool) []string {
+		var result []string
+		for id := range m {
+			result = append(result, id)
+		}
+		return result
+	}
+
+	executor.EXPECT().Run("podman", mock.Anything).Return(nil)
+
+	configMock := createMockConfigWithTool("podman")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+		WithTryPaths(tryPathsFunc),
+		WithFindMainContainersForPath(findMainFunc),
+		WithExtractProjectFromContainer(extractProjectFunc),
+		WithFindComposeContainersForProject(findComposeFunc),
+		WithDeduplicateAndFilterContainerIDs(dedupeFunc),
+	)
+
+	err := containerCLI.KillContainer(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestKillContainer_PassesCorrectArgsToExecutor(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+	var capturedArgs []string
+
+	tryPathsFunc := func(p string, pather pather.Pather) []string {
+		return []string{p}
+	}
+	findMainFunc := func(tool, p string, executor exec.Executor) ([]string, error) {
+		return []string{"abc123"}, nil
+	}
+	extractProjectFunc := func(tool, id string, executor exec.Executor) (string, error) {
+		return "", nil
+	}
+	findComposeFunc := func(tool, project string, executor exec.Executor) ([]string, error) {
+		return []string{}, nil
+	}
+	dedupeFunc := func(m map[string]bool) []string {
+		var result []string
+		for id := range m {
+			result = append(result, id)
+		}
+		return result
+	}
+
+	executor.EXPECT().Run("docker", mock.Anything).Run(func(name string, args ...string) {
+		capturedArgs = append([]string{name}, args...)
+	}).Return(nil)
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+		WithTryPaths(tryPathsFunc),
+		WithFindMainContainersForPath(findMainFunc),
+		WithExtractProjectFromContainer(extractProjectFunc),
+		WithFindComposeContainersForProject(findComposeFunc),
+		WithDeduplicateAndFilterContainerIDs(dedupeFunc),
+	)
+
+	err := containerCLI.KillContainer(path)
+
+	r.Nil(err)
+	r.GreaterOrEqual(len(capturedArgs), 3)
+	r.Equal("docker", capturedArgs[0])
+	r.Equal("rm", capturedArgs[1])
+	r.Equal("-f", capturedArgs[2])
+}
+
+// ============================================================================
+// Tests for ShowLogs
+// ============================================================================
+
+func TestShowLogs_SuccessfulShowLogsWithoutFollow(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	containerID := "container123"
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil)
+
+	executor.EXPECT().Run("docker", mock.Anything, mock.Anything).Return(nil)
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ShowLogs(path, false)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestShowLogs_SuccessfulShowLogsWithFollow(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	containerID := "container456"
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil)
+
+	executor.EXPECT().Run("docker", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ShowLogs(path, true)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestShowLogs_NoContainerFoundForPath(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(""), nil)
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ShowLogs(path, false)
+
+	r.NotNil(err)
+	assert.ErrorContains(t, err, "nenhum container encontrado")
+}
+
+func TestShowLogs_OutputCommandReturnsError(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("docker error"))
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ShowLogs(path, false)
+
+	r.NotNil(err)
+	assert.ErrorContains(t, err, "docker error")
+}
+
+func TestShowLogs_RunLogsCommandReturnsError(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	containerID := "container789"
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil)
+
+	executor.EXPECT().Run("docker", mock.Anything, mock.Anything).Return(fmt.Errorf("logs error"))
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ShowLogs(path, false)
+
+	r.NotNil(err)
+	assert.ErrorContains(t, err, "logs error")
+}
+
+func TestShowLogs_UsesCorrectToolFromConfig(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	containerID := "container123"
+	executor.EXPECT().Output("podman", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil)
+
+	executor.EXPECT().Run("podman", mock.Anything, mock.Anything).Return(nil)
+
+	configMock := createMockConfigWithTool("podman")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ShowLogs(path, false)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestShowLogs_TrimsWhitespaceFromContainerID(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// Output has leading/trailing whitespace and newline
+	containerIDWithWhitespace := "  container123\n  "
+
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerIDWithWhitespace), nil)
+
+	// Verify that the Run call uses variadic args (the trimmed ID will be in there)
+	executor.EXPECT().Run("docker", mock.Anything, mock.Anything).Return(nil)
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ShowLogs(path, false)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestShowLogs_FollowFlagAddedToArgs(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+	var capturedArgs []string
+
+	containerID := "container123"
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil)
+
+	executor.EXPECT().Run("docker", mock.Anything, mock.Anything, mock.Anything).Run(func(name string, args ...string) {
+		capturedArgs = append([]string{name}, args...)
+	}).Return(nil)
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ShowLogs(path, true)
+
+	r.Nil(err)
+	r.GreaterOrEqual(len(capturedArgs), 3)
+	r.Equal("docker", capturedArgs[0])
+	r.Equal("logs", capturedArgs[1])
+	r.Equal("-f", capturedArgs[2])
+	r.Equal(containerID, capturedArgs[3])
+}
+
+func TestShowLogs_FilterConstructedCorrectly(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/myproject"
+
+	executor := exec.NewMockExecutor(t)
+	var capturedArgs []string
+
+	containerID := "container123"
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Run(func(name string, args ...string) {
+		capturedArgs = append([]string{name}, args...)
+	}).Return([]byte(containerID), nil)
+
+	executor.EXPECT().Run("docker", mock.Anything, mock.Anything).Return(nil)
+
+	configMock := createMockConfigWithTool("docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ShowLogs(path, false)
+
+	r.Nil(err)
+	expectedFilter := fmt.Sprintf("label=devcontainer.local_folder=%s", path)
+	// The 4th argument should be the filter
+	if len(capturedArgs) >= 5 {
+		r.Equal(expectedFilter, capturedArgs[4])
+	}
 }
