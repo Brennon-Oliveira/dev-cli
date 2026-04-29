@@ -22,6 +22,10 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
+  github.com/Brennon-Oliveira/dev-cli/internal/config:
+    config:
+      all: true
+      filename: config_mocks.go
   github.com/Brennon-Oliveira/dev-cli/internal/exec:
     config:
       all: true
@@ -38,6 +42,10 @@ packages:
     config:
       all: true
       filename: container_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/logger:
+    config:
+      all: true
+      filename: logger_mocks.go
   github.com/Brennon-Oliveira/dev-cli/internal/vscode:
     config:
       all: true

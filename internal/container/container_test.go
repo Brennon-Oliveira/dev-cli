@@ -25,24 +25,21 @@ func TestMain(m *testing.M) {
 // Helpers
 // ============================================================================
 
-type mockConfig struct {
-	mock.Mock
-}
-
-func (m *mockConfig) Load() config.GlobalConfig {
-	args := m.Called()
-	return args.Get(0).(config.GlobalConfig)
-}
-
-func createMockConfigWithTool(tool string) *mockConfig {
-	mockCfg := new(mockConfig)
+// createMockConfigWithTool creates a mock config that will return the specified tool when Load() is called
+func createMockConfigWithTool(t *testing.T, tool string) *config.MockConfig {
+	mockCfg := config.NewMockConfig(t)
 	globalCfg := config.GlobalConfig{
 		Core: struct {
 			Tool string `json:"tool"`
 		}{Tool: tool},
 	}
-	mockCfg.On("Load").Return(globalCfg)
+	mockCfg.EXPECT().Load().Return(globalCfg)
 	return mockCfg
+}
+
+// createEmptyMockConfig creates a mock config without setting any expectations (for builder tests)
+func createEmptyMockConfig(t *testing.T) *config.MockConfig {
+	return config.NewMockConfig(t)
 }
 
 // ============================================================================
@@ -60,7 +57,7 @@ func TestListContainersOfActiveDevcontainers_SuccessfulExecutionWithContainers(t
 	executor := exec.NewMockExecutor(t)
 	executor.EXPECT().Output(mock.Anything, mock.Anything, mock.Anything).Return([]byte(mockOutput), nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -82,7 +79,7 @@ func TestCleanResources_BothPrunesSucceed_ReturnsNil(t *testing.T) {
 	executor := exec.NewMockExecutor(t)
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(nil).Times(2)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -103,7 +100,7 @@ func TestCleanResources_ContainerPruneFailsReturnsNilAndStops(t *testing.T) {
 	// Container prune fails, should return nil and NOT call network prune
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(fmt.Errorf("container prune error")).Once()
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -126,7 +123,7 @@ func TestCleanResources_ContainerPruneFailsDoesNotContinue(t *testing.T) {
 	// So we only expect 1 call
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(fmt.Errorf("container error")).Once()
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -149,7 +146,7 @@ func TestCleanResources_NetworkPruneFailsAfterContainerPruneSucceeds(t *testing.
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(nil).Once()
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(fmt.Errorf("network prune failed")).Once()
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -171,7 +168,7 @@ func TestCleanResources_NetworkPruneFailsWithSpecificError(t *testing.T) {
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(nil).Once()
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(fmt.Errorf("network not found")).Once()
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -191,7 +188,7 @@ func TestCleanResources_CallsExecutorWithCorrectArgs_ContainerPrune(t *testing.T
 
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(nil).Times(2)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -211,7 +208,7 @@ func TestCleanResources_CallsExecutorWithCorrectArgs_NetworkPrune(t *testing.T) 
 
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(nil).Times(2)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -232,7 +229,7 @@ func TestCleanResources_UsesConfigToolCorrectly(t *testing.T) {
 	// Both calls should use "podman" as the tool (from config)
 	executor.EXPECT().Run("podman", mock.Anything).Return(nil).Times(2)
 
-	configMock := createMockConfigWithTool("podman")
+	configMock := createMockConfigWithTool(t, "podman")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -253,7 +250,7 @@ func TestCleanResources_NetworkPruneReturnsErrorWhenContainerSucceeds(t *testing
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(nil).Once()
 	executor.EXPECT().Run(mock.Anything, mock.Anything).Return(fmt.Errorf("network error")).Once()
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -286,7 +283,7 @@ func TestCleanResources_SequenceOfOperations_BothSucceed(t *testing.T) {
 		}
 	}).Return(nil).Once()
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -307,7 +304,7 @@ func TestListContainersOfActiveDevcontainers_ExecutorReturnsError(t *testing.T) 
 	executor := exec.NewMockExecutor(t)
 	executor.EXPECT().Output(mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("docker not running"))
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -326,7 +323,7 @@ func TestListContainersOfActiveDevcontainers_EmptyOutput(t *testing.T) {
 	executor := exec.NewMockExecutor(t)
 	executor.EXPECT().Output(mock.Anything, mock.Anything, mock.Anything).Return([]byte(""), nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -352,7 +349,7 @@ func TestListContainersOfActiveDevcontainers_UsesInjectedParseFunction(t *testin
 	executor := exec.NewMockExecutor(t)
 	executor.EXPECT().Output(mock.Anything, mock.Anything, mock.Anything).Return([]byte(mockOutput), nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -380,7 +377,7 @@ func TestListContainersOfActiveDevcontainers_UsesInjectedFormatFunction(t *testi
 	executor := exec.NewMockExecutor(t)
 	executor.EXPECT().Output(mock.Anything, mock.Anything, mock.Anything).Return([]byte(mockOutput), nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -458,7 +455,7 @@ func TestNewContainerCLI_WithExecutor_OptionApplied(t *testing.T) {
 func TestNewContainerCLI_WithConfig_OptionApplied(t *testing.T) {
 	r := require.New(t)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createEmptyMockConfig(t)
 
 	containerCLI := NewContainerCLI(WithConfig(configMock))
 
@@ -496,7 +493,7 @@ func TestNewContainerCLI_MultipleOptions_AllApplied(t *testing.T) {
 	r := require.New(t)
 
 	executor := exec.NewMockExecutor(t)
-	configMock := createMockConfigWithTool("docker")
+	configMock := createEmptyMockConfig(t)
 
 	customParseFunc := func(output string) map[string][]*container_utils.Container {
 		return make(map[string][]*container_utils.Container)
@@ -533,7 +530,7 @@ func TestListContainersIntegration_FlowWithRealParsing(t *testing.T) {
 	executor := exec.NewMockExecutor(t)
 	executor.EXPECT().Output(mock.Anything, mock.Anything, mock.Anything).Return([]byte(mockOutput), nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -579,7 +576,7 @@ func TestKillContainer_SuccessfulKillSingleContainer(t *testing.T) {
 	// Expect the rm -f call with variadic args
 	executor.EXPECT().Run("docker", mock.Anything).Return(nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -625,7 +622,7 @@ func TestKillContainer_SuccessfulKillMultipleContainers(t *testing.T) {
 
 	executor.EXPECT().Run("docker", mock.Anything).Return(nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -671,7 +668,7 @@ func TestKillContainer_GetAllRelatedContainersReturnsError(t *testing.T) {
 
 	executor.AssertNotCalled(t, "Run")
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -717,7 +714,7 @@ func TestKillContainer_ExecutorRunReturnsError(t *testing.T) {
 
 	executor.EXPECT().Run("docker", mock.Anything).Return(fmt.Errorf("docker error"))
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -763,7 +760,7 @@ func TestKillContainer_UsesCorrectToolFromConfig(t *testing.T) {
 
 	executor.EXPECT().Run("podman", mock.Anything).Return(nil)
 
-	configMock := createMockConfigWithTool("podman")
+	configMock := createMockConfigWithTool(t, "podman")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -812,7 +809,7 @@ func TestKillContainer_PassesCorrectArgsToExecutor(t *testing.T) {
 		capturedArgs = append([]string{name}, args...)
 	}).Return(nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -848,7 +845,7 @@ func TestShowLogs_SuccessfulShowLogsWithoutFollow(t *testing.T) {
 
 	executor.EXPECT().Run("docker", mock.Anything, mock.Anything).Return(nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -872,7 +869,7 @@ func TestShowLogs_SuccessfulShowLogsWithFollow(t *testing.T) {
 
 	executor.EXPECT().Run("docker", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -893,7 +890,7 @@ func TestShowLogs_NoContainerFoundForPath(t *testing.T) {
 
 	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(""), nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -914,7 +911,7 @@ func TestShowLogs_OutputCommandReturnsError(t *testing.T) {
 
 	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("docker error"))
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -938,7 +935,7 @@ func TestShowLogs_RunLogsCommandReturnsError(t *testing.T) {
 
 	executor.EXPECT().Run("docker", mock.Anything, mock.Anything).Return(fmt.Errorf("logs error"))
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -962,7 +959,7 @@ func TestShowLogs_UsesCorrectToolFromConfig(t *testing.T) {
 
 	executor.EXPECT().Run("podman", mock.Anything, mock.Anything).Return(nil)
 
-	configMock := createMockConfigWithTool("podman")
+	configMock := createMockConfigWithTool(t, "podman")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -989,7 +986,7 @@ func TestShowLogs_TrimsWhitespaceFromContainerID(t *testing.T) {
 	// Verify that the Run call uses variadic args (the trimmed ID will be in there)
 	executor.EXPECT().Run("docker", mock.Anything, mock.Anything).Return(nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -1016,7 +1013,7 @@ func TestShowLogs_FollowFlagAddedToArgs(t *testing.T) {
 		capturedArgs = append([]string{name}, args...)
 	}).Return(nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),
@@ -1047,7 +1044,7 @@ func TestShowLogs_FilterConstructedCorrectly(t *testing.T) {
 
 	executor.EXPECT().Run("docker", mock.Anything, mock.Anything).Return(nil)
 
-	configMock := createMockConfigWithTool("docker")
+	configMock := createMockConfigWithTool(t, "docker")
 
 	containerCLI := NewContainerCLI(
 		WithExecutor(executor),

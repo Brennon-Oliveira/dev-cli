@@ -286,3 +286,60 @@ func (_c *MockContainerCLI_ListContainersOfActiveDevcontainers_Call) RunAndRetur
 	_c.Call.Return(run)
 	return _c
 }
+
+// ShowLogs provides a mock function for the type MockContainerCLI
+func (_mock *MockContainerCLI) ShowLogs(path string, follow bool) error {
+	ret := _mock.Called(path, follow)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ShowLogs")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(string, bool) error); ok {
+		r0 = returnFunc(path, follow)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockContainerCLI_ShowLogs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ShowLogs'
+type MockContainerCLI_ShowLogs_Call struct {
+	*mock.Call
+}
+
+// ShowLogs is a helper method to define mock.On call
+//   - path string
+//   - follow bool
+func (_e *MockContainerCLI_Expecter) ShowLogs(path interface{}, follow interface{}) *MockContainerCLI_ShowLogs_Call {
+	return &MockContainerCLI_ShowLogs_Call{Call: _e.mock.On("ShowLogs", path, follow)}
+}
+
+func (_c *MockContainerCLI_ShowLogs_Call) Run(run func(path string, follow bool)) *MockContainerCLI_ShowLogs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 bool
+		if args[1] != nil {
+			arg1 = args[1].(bool)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockContainerCLI_ShowLogs_Call) Return(err error) *MockContainerCLI_ShowLogs_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockContainerCLI_ShowLogs_Call) RunAndReturn(run func(path string, follow bool) error) *MockContainerCLI_ShowLogs_Call {
+	_c.Call.Return(run)
+	return _c
+}
