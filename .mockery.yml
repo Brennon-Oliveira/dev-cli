@@ -1,0 +1,52 @@
+all: false
+dir: '{{.InterfaceDir}}'
+filename: mocks_test.go
+force-file-write: true
+formatter: goimports
+formatter-options:
+  goimports:
+    all-errors: false
+    comments: true
+    format-only: true
+    fragment: false
+    local-prefix: ""
+    tab-indent: true
+    tab-width: 8
+generate: true
+include-auto-generated: false
+log-level: info
+structname: '{{.Mock}}{{.InterfaceName}}'
+pkgname: '{{.SrcPackageName}}'
+recursive: false
+require-template-schema-exists: true
+template: testify
+template-schema: '{{.Template}}.schema.json'
+packages:
+  github.com/Brennon-Oliveira/dev-cli/internal/config:
+    config:
+      all: true
+      filename: config_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/exec:
+    config:
+      all: true
+      filename: executor_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/pather:
+    config:
+      all: true
+      filename: pather_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/devcontainer:
+    config:
+      all: true
+      filename: devcontainer_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/container:
+    config:
+      all: true
+      filename: container_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/logger:
+    config:
+      all: true
+      filename: logger_mocks.go
+  github.com/Brennon-Oliveira/dev-cli/internal/vscode:
+    config:
+      all: true
+      filename: vscode_mocks.go

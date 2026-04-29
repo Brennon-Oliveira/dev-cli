@@ -1,9 +1,28 @@
 package cmd
 
 import (
-	"github.com/Brennon-Oliveira/dev-cli/internal/container"
+	"github.com/Brennon-Oliveira/dev-cli/internal/devcontainer"
+	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
+	"github.com/Brennon-Oliveira/dev-cli/internal/logger"
+	"github.com/Brennon-Oliveira/dev-cli/internal/pather"
 	"github.com/spf13/cobra"
 )
+
+type shellImplParams struct {
+	args         []string
+	pather       pather.Pather
+	devcontainer devcontainer.DevContainerCLI
+}
+
+func shellImpl(p *shellImplParams) error {
+	path := p.pather.GetPathFromArgs(p.args)
+	absPath, _ := p.pather.GetAbsPath(path)
+
+	logger.Info("Iniciando shell interativo")
+	logger.Verbose("Caminho absoluto encontrado: %s", absPath)
+
+	return p.devcontainer.OpenShell(absPath)
+}
 
 var shellCmd = &cobra.Command{
 	Use:   "shell [caminho]",
@@ -11,16 +30,20 @@ var shellCmd = &cobra.Command{
 	Long:  "Aloca um TTY e injeta uma sessão de terminal interativa no container ativo, detectando e priorizando automaticamente o uso de zsh, bash ou sh, conforme a disponibilidade no sistema de arquivos remoto.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		path := ""
-		if len(args) > 0 {
-			path = args[0]
-		}
-		absPath, _ := container.GetAbsPath(path)
+		executor := exec.NewExecutor()
+		pather := pather.NewPather(
+			pather.WithExecutor(executor),
+		)
 
-		// Tenta abrir shells em ordem de preferência
-		// Se o zsh falhar (container não tem), o erro do RunE será propagado.
-		// Para maior robustez, poderíamos encadear tentativas, mas aqui segue o padrão direto.
-		return container.RunInteractive(absPath, []string{"/bin/sh", "-c", "if command -v zsh >/dev/null 2>&1; then zsh; elif command -v bash >/dev/null 2>&1; then bash; else sh; fi"})
+		devcontainer := devcontainer.NewDevContainerCLI(
+			devcontainer.WithExecutor(executor),
+		)
+
+		return shellImpl(&shellImplParams{
+			args:         args,
+			pather:       pather,
+			devcontainer: devcontainer,
+		})
 	},
 }
 

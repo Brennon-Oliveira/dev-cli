@@ -3,10 +3,13 @@ package cmd
 import (
 	"os"
 
+	"github.com/Brennon-Oliveira/dev-cli/internal/logger"
 	"github.com/spf13/cobra"
 )
 
 var Version = "dev"
+
+var verboseFlag bool
 
 var rootCmd = &cobra.Command{
 	Use:     "dev",
@@ -30,9 +33,24 @@ Ele permite provisionar, acessar e destruir ambientes de desenvolvimento isolado
   # Derruba e exclui o container e todos os serviços acoplados
   dev kill .`,
 	SilenceUsage: true,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		logger.SetVerbose(verboseFlag)
+	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+}
+
+func initLogger() {
+	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Roda o comando em modo verbose (mostra todos os logs executados por baixo dos panos)")
+	logger.InitLogger(
+		logger.WithVerbose(verboseFlag),
+		logger.WithWriter(os.Stdout),
+	)
 }
 
 func Execute() {
+	initLogger()
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)

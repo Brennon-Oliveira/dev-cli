@@ -1,11 +1,37 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/Brennon-Oliveira/dev-cli/internal/container"
+	"github.com/Brennon-Oliveira/dev-cli/internal/devcontainer"
+	"github.com/Brennon-Oliveira/dev-cli/internal/exec"
+	"github.com/Brennon-Oliveira/dev-cli/internal/logger"
+	"github.com/Brennon-Oliveira/dev-cli/internal/pather"
+	"github.com/Brennon-Oliveira/dev-cli/internal/vscode"
 	"github.com/spf13/cobra"
 )
+
+type openImplParams struct {
+	args   []string
+	pather pather.Pather
+	vscode vscode.VSCode
+}
+
+func openImpl(p *openImplParams) error {
+	args := p.args
+	logger.Info("Iniciando projeto")
+	path := p.pather.GetPathFromArgs(args)
+	absPath, _ := p.pather.GetAbsPath(path)
+
+	workspaceURI, err := p.vscode.GetContainerWorkspaceURI(absPath)
+
+	if err != nil {
+		return err
+	}
+
+	logger.Info("Abrindo editor")
+	logger.Verbose("Abrindo VS Code com URI: %s", workspaceURI)
+
+	return p.vscode.OpenWorkspaceByURI(workspaceURI)
+}
 
 var openCmd = &cobra.Command{
 	Use:   "open [caminho]",
@@ -13,15 +39,25 @@ var openCmd = &cobra.Command{
 	Long:  "Abre o VS Code conectado a um dev container já em execução. Utiliza resolução dinâmica de URIs para forçar a montagem exata da raiz do projeto, independente da profundidade do diretório definido nas configurações.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		path := ""
-		if len(args) > 0 {
-			path = args[0]
-		}
+		executor := exec.NewExecutor()
+		pather := pather.NewPather(
+			pather.WithExecutor(executor),
+		)
 
-		absPath, _ := container.GetAbsPath(path)
-		uri := container.GetContainerURI(absPath)
-		fmt.Printf("Abrindo VS Code...\n")
-		return container.ExecDetached("code", "--folder-uri", uri)
+		devcontainer := devcontainer.NewDevContainerCLI(
+			devcontainer.WithExecutor(executor),
+		)
+		vscode := vscode.NewVSCode(
+			vscode.WithExecutor(executor),
+			vscode.WithPather(pather),
+			vscode.WithDevcontainerCLI(devcontainer),
+		)
+
+		return openImpl(&openImplParams{
+			args:   args,
+			pather: pather,
+			vscode: vscode,
+		})
 	},
 }
 

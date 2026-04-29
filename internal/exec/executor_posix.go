@@ -1,6 +1,6 @@
 //go:build !windows
 
-package container
+package exec
 
 import (
 	"os/exec"

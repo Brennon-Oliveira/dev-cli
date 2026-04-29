@@ -1,89 +1,35 @@
-name: Build and Release
+name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_run:
+    workflows:
+      - "Build"
+    types:
+      - completed
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  draft:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - os: linux-amd64
-            goos: linux
-            goarch: amd64
-            ext: ''
-            archive: tar.gz
-          - os: linux-arm64
-            goos: linux
-            goarch: arm64
-            ext: ''
-            archive: tar.gz
-          - os: macos-amd64
-            goos: darwin
-            goarch: amd64
-            ext: ''
-            archive: tar.gz
-          - os: macos-arm64
-            goos: darwin
-            goarch: arm64
-            ext: ''
-            archive: tar.gz
-          - os: windows-amd64
-            goos: windows
-            goarch: amd64
-            ext: '.exe'
-            archive: zip
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 'stable'
-
-      - name: Build
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-        run: go build -v -ldflags="-X 'github.com/Brennon-Oliveira/dev-cli/cmd.Version=${{ github.ref_name }}'" -o dev${{ matrix.ext }} main.go
-
-      - name: Archive binary
-        run: |
-          if [ "${{ matrix.archive }}" = "zip" ]; then
-            zip dev-${{ matrix.os }}.zip dev${{ matrix.ext }}
-          else
-            tar -czvf dev-${{ matrix.os }}.tar.gz dev${{ matrix.ext }}
-          fi
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dev-${{ matrix.os }}
-          path: |
-            *.zip
-            *.tar.gz
-          retention-days: 1
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'v')
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Draft Release and Upload Asset
+      - name: Create Draft Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
+          tag_name: ${{ github.event.workflow_run.head_branch }}
           files: artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
