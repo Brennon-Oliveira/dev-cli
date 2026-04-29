@@ -1,0 +1,25 @@
+name: dev-cli
+version: git
+summary: CLI tool for managing devcontainers
+description: |
+  dev-cli is a CLI tool to work with devcontainers easily.
+
+grade: devel
+confinement: devmode
+base: core22
+
+parts:
+  dev-cli:
+    plugin: go
+    source: .
+    build-snaps:
+      - go/latest/stable
+    override-build: |
+      go build \
+        -ldflags="-X 'github.com/Brennon-Oliveira/dev-cli/cmd.Version=$(git describe --tags)'" \
+        -o dev main.go
+      install -Dm755 dev $SNAPCRAFT_PART_INSTALL/bin/dev
+
+apps:
+  dev:
+    command: bin/dev

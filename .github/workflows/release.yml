@@ -70,8 +70,47 @@ jobs:
             *.tar.gz
           retention-days: 1
 
+  snap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Build Snap (amd64)
+        uses: snapcore/action-build@v1
+        id: snap-build
+      
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snap-amd64
+          path: ${{ steps.snap-build.outputs.snap }}
+          retention-days: 1
+
+  snap-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Snap (arm64) via QEMU
+        uses: snapcore/action-build@v1
+        id: snap-build
+        with:
+          snapcraft-args: --build-for arm64
+
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snap-arm64
+          path: ${{ steps.snap-build.outputs.snap }}
+          retention-days: 1
+
+
   release:
-    needs: build
+    needs: [build, snap, snap-arm64]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -87,3 +126,22 @@ jobs:
           files: artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+  publish-snap:
+    needs: [snap, snap-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download snap artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: snap-*
+          path: snaps
+          merge-multiple: true
+      
+      - name: Publish to Snap Store
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
+        with:
+          snap: snaps/*.snap
+          release: edge
