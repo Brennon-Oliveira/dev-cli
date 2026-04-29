@@ -5,6 +5,7 @@ type DevContainerCLI interface {
 	GetWorkspaceFolder(absPath string) (string, error)
 	ReadConfiguration(absPath string) (*DevContainerConfiguration, error)
 	RunInteractive(path string, command string) error
+	OpenShell(path string) error
 }
 
 type DevContainerConfiguration_Workspace struct {

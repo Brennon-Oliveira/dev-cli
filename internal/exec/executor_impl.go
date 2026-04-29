@@ -2,6 +2,7 @@ package exec
 
 import (
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -55,7 +56,16 @@ func (e *realExecutor) RunDetached(name string, args ...string) error {
 	return cmd.Process.Release()
 }
 
-// RunInteractive implements [Executor].
 func (e *realExecutor) RunInteractive(name string, args ...string) error {
-	panic("unimplemented")
+	in := io.MultiReader(os.Stdin, e.stdin)
+	out := io.MultiWriter(os.Stdout, e.stdout)
+
+	cmd := exec.Command(name, args...)
+	cmd.Stdin = in
+	cmd.Stdout = out
+	cmd.Stderr = os.Stderr
+
+	logger.Verbose("Rodando interativo: %s", strings.Join(append([]string{name}, args...), " "))
+
+	return cmd.Run()
 }

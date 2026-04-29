@@ -287,6 +287,57 @@ func (_c *MockContainerCLI_ListContainersOfActiveDevcontainers_Call) RunAndRetur
 	return _c
 }
 
+// ListPorts provides a mock function for the type MockContainerCLI
+func (_mock *MockContainerCLI) ListPorts(path string) error {
+	ret := _mock.Called(path)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListPorts")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
+		r0 = returnFunc(path)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockContainerCLI_ListPorts_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListPorts'
+type MockContainerCLI_ListPorts_Call struct {
+	*mock.Call
+}
+
+// ListPorts is a helper method to define mock.On call
+//   - path string
+func (_e *MockContainerCLI_Expecter) ListPorts(path interface{}) *MockContainerCLI_ListPorts_Call {
+	return &MockContainerCLI_ListPorts_Call{Call: _e.mock.On("ListPorts", path)}
+}
+
+func (_c *MockContainerCLI_ListPorts_Call) Run(run func(path string)) *MockContainerCLI_ListPorts_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockContainerCLI_ListPorts_Call) Return(err error) *MockContainerCLI_ListPorts_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockContainerCLI_ListPorts_Call) RunAndReturn(run func(path string) error) *MockContainerCLI_ListPorts_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ShowLogs provides a mock function for the type MockContainerCLI
 func (_mock *MockContainerCLI) ShowLogs(path string, follow bool) error {
 	ret := _mock.Called(path, follow)

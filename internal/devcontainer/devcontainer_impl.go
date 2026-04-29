@@ -88,3 +88,24 @@ func (c *realDevContainerCLI) RunInteractive(path string, command string) error 
 
 	return nil
 }
+
+func (c *realDevContainerCLI) OpenShell(path string) error {
+	commandArgs := []string{"exec", "--workspace-folder", path}
+	shellArgs := append(commandArgs, []string{"/bin/sh", "-c", "if command -v zsh >/dev/null 2>&1; then zsh; elif command -v bash >/dev/null 2>&1; then bash; else sh; fi"}...)
+
+	tool := "devcontainer"
+
+	logger.Info("Abrindo shell interativo")
+	logger.Verbose("Abrindo shell interativo com o comando: %s %s", tool, strings.Join(shellArgs, " "))
+
+	err := c.executor.RunInteractive(tool, shellArgs...)
+
+	if err != nil {
+		logger.Error("Houve um erro ao abrir o shell interativo.")
+		return err
+	}
+
+	logger.Info("Sessão encerrada")
+
+	return nil
+}
