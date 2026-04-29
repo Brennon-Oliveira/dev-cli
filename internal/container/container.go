@@ -7,4 +7,5 @@ type ContainerCLI interface {
 	GetAllRelatedContainers(path string) ([]string, error)
 	KillContainer(path string) error
 	ShowLogs(path string, follow bool) error
+	ListPorts(path string) error
 }

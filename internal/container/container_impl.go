@@ -183,3 +183,32 @@ func (c *realContainerCLI) ShowLogs(path string, follow bool) error {
 
 	return nil
 }
+
+func (c *realContainerCLI) ListPorts(path string) error {
+	tool := c.config.Load().Core.Tool
+
+	filter := fmt.Sprintf("label=devcontainer.local_folder=%s", path)
+	out, err := c.executor.Output(tool, "ps", "-q", "--filter", filter)
+
+	if err != nil {
+		logger.Error("Não foi possível obter os containers para listar as portas.")
+		return err
+	}
+
+	id := strings.TrimSpace(string(out))
+	if id == "" {
+		logger.Error("Nenhum container encontrado para o caminho especificado.")
+		return fmt.Errorf("nenhum container encontrado para o caminho: %s", path)
+	}
+
+	out, err = c.executor.Output(tool, "port", id)
+
+	if err != nil {
+		logger.Error("Não foi possível obter as portas mapeadas do container.")
+		return err
+	}
+
+	logger.Info("Portas mapeadas para o container %s:\n%s", id, string(out))
+
+	return nil
+}

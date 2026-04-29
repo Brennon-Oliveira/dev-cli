@@ -1060,3 +1060,279 @@ func TestShowLogs_FilterConstructedCorrectly(t *testing.T) {
 		r.Equal(expectedFilter, capturedArgs[4])
 	}
 }
+
+// ============================================================================
+// Tests for ListPorts
+// ============================================================================
+
+func TestListPorts_SuccessfulListPorts(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	containerID := "container123"
+	portsOutput := "8080/tcp -> 0.0.0.0:8080\n3000/tcp -> 0.0.0.0:3000"
+
+	// First Output call gets the container ID
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil).Once()
+
+	// Second Output call gets the ports (uses variadic args)
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything).Return([]byte(portsOutput), nil).Once()
+
+	configMock := createMockConfigWithTool(t, "docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestListPorts_FirstOutputCommandReturnsError(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// First Output call fails
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("docker error")).Once()
+
+	configMock := createMockConfigWithTool(t, "docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.NotNil(err)
+	assert.ErrorContains(t, err, "docker error")
+}
+
+func TestListPorts_NoContainerFoundForPath(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// Container ID is empty
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(""), nil)
+
+	configMock := createMockConfigWithTool(t, "docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.NotNil(err)
+	assert.ErrorContains(t, err, "nenhum container encontrado")
+}
+
+func TestListPorts_SecondOutputCommandReturnsError(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	containerID := "container123"
+
+	// First Output call succeeds
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil).Once()
+
+	// Second Output call fails
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("port command error")).Once()
+
+	configMock := createMockConfigWithTool(t, "docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.NotNil(err)
+	assert.ErrorContains(t, err, "port command error")
+}
+
+func TestListPorts_UsesCorrectToolFromConfig(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	containerID := "container123"
+	portsOutput := "8080/tcp -> 0.0.0.0:8080"
+
+	// Both calls should use "podman"
+	executor.EXPECT().Output("podman", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil).Once()
+	executor.EXPECT().Output("podman", mock.Anything, mock.Anything).Return([]byte(portsOutput), nil).Once()
+
+	configMock := createMockConfigWithTool(t, "podman")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestListPorts_TrimsWhitespaceFromContainerID(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	// Container ID with whitespace
+	containerIDWithWhitespace := "  container123\n  "
+	portsOutput := "8080/tcp -> 0.0.0.0:8080"
+
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerIDWithWhitespace), nil).Once()
+
+	// The Output call should use variadic args (the trimmed ID will be in there)
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything).Return([]byte(portsOutput), nil).Once()
+
+	configMock := createMockConfigWithTool(t, "docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestListPorts_FilterConstructedCorrectly(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/myproject"
+
+	executor := exec.NewMockExecutor(t)
+	var capturedArgs []string
+
+	containerID := "container123"
+	portsOutput := "8080/tcp -> 0.0.0.0:8080"
+
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Run(func(name string, args ...string) {
+		capturedArgs = append([]string{name}, args...)
+	}).Return([]byte(containerID), nil).Once()
+
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything).Return([]byte(portsOutput), nil).Once()
+
+	configMock := createMockConfigWithTool(t, "docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.Nil(err)
+	expectedFilter := fmt.Sprintf("label=devcontainer.local_folder=%s", path)
+	// The 4th argument should be the filter
+	if len(capturedArgs) >= 5 {
+		r.Equal(expectedFilter, capturedArgs[4])
+	}
+}
+
+func TestListPorts_PortsOutputReturned(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	containerID := "container123"
+	portsOutput := "8080/tcp -> 0.0.0.0:8080\n3000/tcp -> 0.0.0.0:3000\n5432/tcp -> 0.0.0.0:5432"
+
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil).Once()
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything).Return([]byte(portsOutput), nil).Once()
+
+	configMock := createMockConfigWithTool(t, "docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestListPorts_NoPortsMappedButContainerExists(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+
+	containerID := "container123"
+	emptyPortsOutput := ""
+
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte(containerID), nil).Once()
+
+	// Even if no ports are mapped, the command succeeds
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything).Return([]byte(emptyPortsOutput), nil).Once()
+
+	configMock := createMockConfigWithTool(t, "docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.Nil(err)
+	executor.AssertExpectations(t)
+}
+
+func TestListPorts_CallsOutputTwiceInCorrectOrder(t *testing.T) {
+	r := require.New(t)
+	path := "/home/user/project"
+
+	executor := exec.NewMockExecutor(t)
+	var callOrder []string
+
+	containerID := "container123"
+	portsOutput := "8080/tcp -> 0.0.0.0:8080"
+
+	// First Output call
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Run(func(name string, args ...string) {
+		callOrder = append(callOrder, "ps")
+	}).Return([]byte(containerID), nil).Once()
+
+	// Second Output call
+	executor.EXPECT().Output("docker", mock.Anything, mock.Anything).Run(func(name string, args ...string) {
+		callOrder = append(callOrder, "port")
+	}).Return([]byte(portsOutput), nil).Once()
+
+	configMock := createMockConfigWithTool(t, "docker")
+
+	containerCLI := NewContainerCLI(
+		WithExecutor(executor),
+		WithConfig(configMock),
+	)
+
+	err := containerCLI.ListPorts(path)
+
+	r.Nil(err)
+	r.Equal([]string{"ps", "port"}, callOrder)
+	executor.AssertExpectations(t)
+}
