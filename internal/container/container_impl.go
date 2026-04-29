@@ -147,3 +147,39 @@ func (c *realContainerCLI) KillContainer(path string) error {
 
 	return nil
 }
+
+func (c *realContainerCLI) ShowLogs(path string, follow bool) error {
+	tool := c.config.Load().Core.Tool
+	filter := fmt.Sprintf("label=devcontainer.local_folder=%s", path)
+
+	getIdArgs := []string{"ps", "-q", "--filter", filter}
+	out, err := c.executor.Output(tool, getIdArgs...)
+	if err != nil {
+		logger.Error("Não foi possível obter os containers para mostrar os logs.")
+		return err
+	}
+
+	id := strings.TrimSpace(string(out))
+
+	if id == "" {
+		logger.Error("Nenhum container encontrado para o caminho especificado.")
+		return fmt.Errorf("nenhum container encontrado para o caminho: %s", path)
+	}
+
+	logger.Info("Logs do container %s:", id)
+
+	args := []string{"logs"}
+	if follow {
+		args = append(args, "-f")
+	}
+	args = append(args, id)
+
+	err = c.executor.Run(tool, args...)
+
+	if err != nil {
+		logger.Error("Não foi possível mostrar os logs do container.")
+		return err
+	}
+
+	return nil
+}

@@ -6,4 +6,5 @@ type ContainerCLI interface {
 	DownContainer(path string) error
 	GetAllRelatedContainers(path string) ([]string, error)
 	KillContainer(path string) error
+	ShowLogs(path string, follow bool) error
 }
