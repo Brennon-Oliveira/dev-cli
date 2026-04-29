@@ -5,7 +5,7 @@ description: |
   dev-cli is a CLI tool to work with devcontainers easily.
 
 grade: devel
-confinement: devmode
+confinement: classic
 base: core22
 
 parts:
@@ -15,6 +15,7 @@ parts:
     build-snaps:
       - go/latest/stable
     override-build: |
+      export PATH=$PATH:/home/brennon/applications/go/bin
       go build \
         -ldflags="-X 'github.com/Brennon-Oliveira/dev-cli/cmd.Version=$(git describe --tags)'" \
         -o dev main.go

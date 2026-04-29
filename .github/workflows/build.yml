@@ -88,23 +88,3 @@ jobs:
           name: snap-amd64
           path: ${{ steps.snap-build.outputs.snap }}
           retention-days: 1
-
-  snap-arm64:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Build Snap (arm64)
-        uses: snapcore/action-build@v1
-        id: snap-build
-        with:
-          snapcraft-args: --build-for arm64
-
-      - name: Upload snap artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: snap-arm64
-          path: ${{ steps.snap-build.outputs.snap }}
-          retention-days: 1
