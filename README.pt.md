@@ -1,5 +1,7 @@
 # Dev CLI
 
+[English](README.md) | [Português](README.pt.md)
+
 Uma interface de linha de comando para gerenciar o ciclo de vida de Dev Containers e integração nativa com VS Code em modo *detached*.
 
 ## 📥 Instalação
