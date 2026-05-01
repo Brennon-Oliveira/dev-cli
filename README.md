@@ -1,67 +1,250 @@
 # Dev CLI
 
-Uma interface de linha de comando para gerenciamento de ciclo de vida de Dev Containers e integração nativa com o VS Code em modo *detached*.
+A command-line interface for managing Dev Container lifecycle and native VS Code integration in detached mode.
 
-## 📥 Instalação
+## 📥 Installation
 
-Acesse os binários pré-compilados na [página de Releases](https://github.com/Brennon-Oliveira/dev-cli/releases/latest).
+### Linux and macOS (Native WSL Support)
 
-### Linux e macOS (Compatível nativamente com WSL)
-
-Substitua `[OS]` por `linux` ou `macos` e `[ARCH]` por `amd64` ou `arm64` de acordo com a sua arquitetura.
+Replace `[OS]` with `linux` or `macos` and `[ARCH]` with `amd64` or `arm64` according to your architecture.
 
 ```bash
-# 1. Baixe o artefato compactado
-curl -LO [https://github.com/Brennon-Oliveira/dev-cli/releases/latest/download/dev-](https://github.com/Brennon-Oliveira/dev-cli/releases/latest/download/dev-)[OS]-[ARCH].tar.gz
+# 1. Download the compressed artifact
+curl -LO https://github.com/Brennon-Oliveira/dev-cli/releases/latest/download/dev-[OS]-[ARCH].tar.gz
 
-# 2. Descompacte o arquivo
+# 2. Extract the file
 tar -xzf dev-[OS]-[ARCH].tar.gz
 
-# 3. Mova o executável para o PATH do sistema
+# 3. Move the executable to your system PATH
 sudo mv dev /usr/local/bin/
 
-# 4. Limpe o arquivo baixado
+# 4. Clean up the downloaded file
 rm dev-[OS]-[ARCH].tar.gz
 
-# 5. Valide a instalação
+# 5. Verify the installation
 dev --help
-
 ```
 
 ### Windows
 
-1. Baixe o arquivo `dev-windows-amd64.zip` na [última release](https://www.google.com/url?sa=E&source=gmail&q=https://github.com/Brennon-Oliveira/dev-cli/releases/latest).
-2. Extraia o conteúdo do `.zip`.
-3. Mova o binário `dev.exe` para um diretório seguro (ex: `C:\Ferramentas\bin`).
-4. Adicione este diretório à variável de ambiente `PATH` do Windows.
-5. Valide a instalação executando `dev --help` no seu terminal preferido.
+**Option 1: Direct Download (Recommended)**
 
-## 🛠️ Comandos
+1. Download `dev-windows-amd64.zip` from [latest release](https://github.com/Brennon-Oliveira/dev-cli/releases/latest)
+2. Extract the contents of the `.zip` file
+3. Move the `dev.exe` binary to a secure directory (e.g., `C:\Tools\bin`)
+4. Add this directory to your Windows `PATH` environment variable
+5. Verify installation: `dev --help`
 
-### Inicialização e Ciclo de Vida
+**Option 2: Snap Installation (Linux)**
 
-* `dev run [caminho]`: (Recomendado) Provisiona o container e imediatamente abre o VS Code no diretório mapeado.
-* `dev up [caminho]`: Provisiona e inicia o dev container em segundo plano, sem abrir o editor.
-* `dev open [caminho]`: Abre o VS Code diretamente conectado ao dev container já em execução, resolvendo dinamicamente o `workspaceFolder` do `devcontainer.json`.
-* `dev kill [caminho]`: Localiza e encerra instantaneamente o processo do container atrelado ao workspace alvo.
+If you're on Linux, you can also install via Snap:
 
-### Interação com o Ambiente
+```bash
+sudo snap install dev-cli --classic
+```
 
-* `dev shell`: Injeta um shell interativo (`zsh`, `bash` ou `sh`) diretamente dentro do container ativo do diretório atual.
-* `dev exec [comando]`: Repassa comandos e parâmetros arbitrários para serem executados no contexto isolado do container (ex: `dev exec npm run build`).
+## 🛠️ Commands
 
-### Monitoramento e Diagnóstico
+### Container Lifecycle
 
-* `dev list`: Retorna a lista de todos os dev containers em execução no host local.
-* `dev logs [-f]`: Exibe a saída padrão do container. Use a flag `-f` para acompanhamento em tempo real (*tail*).
-* `dev ports`: Lista todos os mapeamentos de rede e portas expostas ativas entre o host e o container atual.
+- **`dev run [path]`** (Recommended) - Provisions the container and immediately opens VS Code in the mapped directory
+- **`dev up [path]`** - Provisions and starts the dev container in the background without opening the editor
+- **`dev open [path]`** - Opens VS Code directly connected to an already running dev container, dynamically resolving the `workspaceFolder` from `devcontainer.json`
+- **`dev kill [path]`** - Instantly locates and terminates the container process attached to the target workspace
+- **`dev down [path]`** - Gracefully stops the container of the current workspace
 
-### Manutenção
+### Environment Interaction
 
-* `dev clean`: Realiza a liberação de recursos do Docker, removendo containers parados e redes órfãs geradas pela extensão.
+- **`dev shell [path]`** - Injects an interactive shell (`zsh`, `bash`, or `sh`) directly into the active container
+- **`dev exec "command"`** - Passes commands and parameters for execution in the isolated container context (e.g., `dev exec npm run build`)
 
-## ⚙️ Casos de Uso
+### Monitoring and Diagnostics
 
-* **Onboarding Imediato:** Após clonar um projeto, não é necessário abrir o VS Code, localizar a pasta e clicar em "Reopen in Container". Basta rodar `dev run` na raiz do repositório pelo terminal. A CLI resolve o build do Docker, lida com a interoperabilidade de caminhos (caso esteja usando WSL) e injeta o `code` na estrutura final.
-* **Execução Headless:** Se você precisa apenas rodar testes ou compilar artefatos em um ambiente padronizado, utilize `dev up` para subir a infraestrutura invisível e `dev exec` para acionar as rotinas, consumindo menos memória do sistema host por não instanciar o Electron.
-* **Resolução Avançada de Caminhos:** O projeto analisa as configurações do `devcontainer.json` nativamente através de regex, garantindo que o editor acesse a pasta raiz real (`workspaceFolder`), lidando automaticamente com fallbacks, caminhos curtos e bugs de parse de URI do VS Code.
+- **`dev list`** or **`dev info`** - Returns a list of all dev containers running on the local host
+- **`dev logs [path]`** - Displays the container's standard output. Use the `-f` flag for real-time monitoring (*tail*)
+- **`dev ports [path]`** - Lists all active network mappings and exposed ports between the host and the current container
+
+### Configuration
+
+- **`dev config [key] [value]`** - Manages CLI configuration settings (e.g., Docker vs Podman selection)
+- **`dev add-completion [bash|zsh|powershell]`** - Automatically configures shell auto-completion
+
+### Maintenance
+
+- **`dev clean`** - Performs Docker resource cleanup by removing stopped containers and orphaned networks
+- **`dev update`** - (Experimental) Downloads the latest CLI version and prepares for installation
+
+## ⚙️ Use Cases
+
+### Immediate Onboarding
+After cloning a project, there's no need to open VS Code, locate the folder, and click "Reopen in Container". Simply run `dev run` at the repository root from the terminal. The CLI resolves the Docker build, handles path interoperability (if using WSL), and injects `code` into the final structure.
+
+```bash
+cd my-project
+dev run
+```
+
+### Headless Execution
+If you only need to run tests or compile artifacts in a standardized environment, use `dev up` to bring the infrastructure up invisibly and `dev exec` to trigger routines, consuming less system memory by not instantiating Electron.
+
+```bash
+dev up .
+dev exec npm run test
+dev exec npm run build
+```
+
+### Advanced Path Resolution
+The project natively analyzes `devcontainer.json` configurations via regex, ensuring the editor accesses the correct workspace root (`workspaceFolder`), automatically handling fallbacks, short paths, and VS Code URI parse bugs.
+
+### Interactive Terminal Sessions
+Quickly access container shell for debugging or manual operations:
+
+```bash
+dev shell
+npm install
+npm run dev
+```
+
+### Container Management
+Monitor and control multiple development containers:
+
+```bash
+dev list                    # See all running containers
+dev logs . -f               # Follow logs in real-time
+dev ports .                 # Check port mappings
+dev kill .                  # Stop and remove container
+```
+
+## 🔧 Configuration
+
+### Container Engine Selection
+
+By default, Dev CLI uses Docker. To use Podman:
+
+```bash
+dev config --global core.tool podman
+```
+
+View current configuration:
+
+```bash
+dev config --global core.tool
+```
+
+### Shell Completion
+
+Install shell auto-completion for your shell:
+
+```bash
+# Bash
+dev add-completion bash
+
+# Zsh
+dev add-completion zsh
+
+# PowerShell
+dev add-completion powershell
+```
+
+## 📋 Requirements
+
+- **Docker** or **Podman** installed
+- **Dev Container CLI** (auto-detected if available): `npm install -g @devcontainers/cli`
+- **VS Code** (optional, for `run` and `open` commands)
+- Go 1.25.6+ (for building from source)
+
+## 🚀 Quick Start
+
+```bash
+# 1. Clone a repository
+git clone https://github.com/example/project.git
+cd project
+
+# 2. Bring up the dev container and open in VS Code
+dev run
+
+# 3. Or, start the container in the background
+dev up
+dev shell
+npm install
+npm run dev
+```
+
+## 🔍 Troubleshooting
+
+### "Container not found" Error
+
+Ensure you're in the project directory that contains `devcontainer.json`:
+
+```bash
+dev run .
+```
+
+### Port Already in Use
+
+List current port mappings and check for conflicts:
+
+```bash
+dev ports
+```
+
+### WSL Path Issues
+
+The CLI automatically handles WSL path conversion. If you experience issues:
+
+1. Verify you're running in WSL: `uname -a`
+2. Ensure Docker Desktop is running and configured for WSL
+3. Run with verbose output: `dev run --verbose .`
+
+### Container Won't Start
+
+Check container logs:
+
+```bash
+dev logs . -f
+```
+
+Check Docker daemon:
+
+```bash
+docker ps -a
+```
+
+## 🤝 Contributing
+
+We welcome contributions! See our development guide in `docs/development.md` for:
+
+- Building from source
+- Running tests
+- Code patterns and conventions
+- WSL-specific considerations
+
+## 📚 Documentation
+
+- **[Architecture](docs/architecture.md)** - System design and components
+- **[Commands](docs/commands.md)** - Command creation guide
+- **[Patterns](docs/patterns.md)** - Development patterns
+- **[Development](docs/development.md)** - Setup and testing
+- **[cmd/AGENTS.md](cmd/AGENTS.md)** - Command structure guide
+- **[internal/AGENTS.md](internal/AGENTS.md)** - Internal package structure
+
+## 📝 License
+
+This project is open source and available under the MIT License.
+
+## 🔗 Links
+
+- [GitHub Repository](https://github.com/Brennon-Oliveira/dev-cli)
+- [Releases](https://github.com/Brennon-Oliveira/dev-cli/releases)
+- [Dev Container Specification](https://containers.dev)
+
+## ✨ Features
+
+- ✅ One-command container setup and VS Code integration
+- ✅ Full WSL support with automatic path conversion
+- ✅ Support for both Docker and Podman
+- ✅ Real-time log monitoring
+- ✅ Port mapping visibility
+- ✅ Shell completion for bash, zsh, and PowerShell
+- ✅ Configuration management
+- ✅ Experimental self-update functionality
