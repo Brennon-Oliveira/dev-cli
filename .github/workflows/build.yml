@@ -51,15 +51,15 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: go build -v -ldflags="-X 'github.com/Brennon-Oliveira/dev-cli/cmd.Version=${{ github.ref_name }}'" -o dev${{ matrix.ext }} main.go
+        run: go build -v -ldflags="-X 'github.com/Brennon-Oliveira/dev-cli/cmd.Version=${{ github.ref_name }}'" -o dev-cli${{ matrix.ext }} main.go
 
       - name: Archive binary
         shell: bash
         run: |
           if [ "${{ matrix.archive }}" = "zip" ]; then
-            zip dev-${{ matrix.os }}.zip dev${{ matrix.ext }}
+            zip dev-${{ matrix.os }}.zip dev-cli${{ matrix.ext }}
           else
-            tar -czvf dev-${{ matrix.os }}.tar.gz dev${{ matrix.ext }}
+            tar -czvf dev-${{ matrix.os }}.tar.gz dev-cli${{ matrix.ext }}
           fi
 
       - name: Upload artifact
