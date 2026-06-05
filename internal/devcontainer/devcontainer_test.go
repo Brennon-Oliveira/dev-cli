@@ -114,6 +114,21 @@ func TestReadConfiguration_ThrowErrorIfNotAbleToUnmarshal(t *testing.T) {
 	assert.ErrorAs(t, err, &syntaxErr)
 }
 
+func TestReadConfiguration_ThrowErrorIfOutputIsEmpty(t *testing.T) {
+	workspace := "/tmp/workspace"
+	executor := exec.NewMockExecutor(t)
+
+	executor.EXPECT().Output(mock.Anything, mock.Anything).Return([]byte{}, nil)
+
+	devcontainerCLI := NewDevContainerCLI(
+		WithExecutor(executor),
+	)
+
+	config, err := devcontainerCLI.ReadConfiguration(workspace)
+	assert.Empty(t, config)
+	assert.ErrorContains(t, err, "saída vazia")
+}
+
 func TestFormatWorkspaceFolderSuffix_FixPathWithOneSlash(t *testing.T) {
 	path := "/tmp/workspaces/"
 
@@ -243,7 +258,7 @@ func TestGetWorkspaceFolder_GetWorkspaceWithError(t *testing.T) {
 
 	got, err := devcontainerCLI.GetWorkspaceFolder(workspace)
 
-	assert.ErrorContains(t, err, "generic error")
+	assert.NoError(t, err)
 	assert.Equal(t, "/workspaces//", got)
 }
 

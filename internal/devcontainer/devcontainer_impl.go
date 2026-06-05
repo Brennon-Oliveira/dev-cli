@@ -1,7 +1,9 @@
 package devcontainer
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/Brennon-Oliveira/dev-cli/internal/logger"
@@ -22,6 +24,10 @@ func (d *realDevContainerCLI) ReadConfiguration(absPath string) (*DevContainerCo
 	devcontainerJsonRaw, err := d.executor.Output("devcontainer", "read-configuration", "--workspace-folder", absPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(bytes.TrimSpace(devcontainerJsonRaw)) == 0 {
+		return nil, errors.New("devcontainer read-configuration retornou uma saída vazia")
 	}
 
 	var config DevContainerConfiguration
@@ -48,7 +54,8 @@ func (d *realDevContainerCLI) GetWorkspaceFolder(absPath string) (string, error)
 
 	if err != nil {
 		logger.Warn("Erro ao ler configuração do devcontainer para buscar 'workspaceFolder', tentando caminho padrão")
-		return formatWorkspaceFolderSuffix("/workspaces"), err
+		logger.Verbose("Erro ao ler configuração do devcontainer: %v", err)
+		return formatWorkspaceFolderSuffix("/workspaces"), nil
 	}
 
 	if config.Workspace.WorkspaceFolder == "" {
