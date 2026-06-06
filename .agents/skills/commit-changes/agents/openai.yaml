@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit Changes"
+  short_description: "Create focused Conventional Commits"
+  default_prompt: "Commit the current changes in focused Conventional Commits."

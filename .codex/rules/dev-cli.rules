@@ -1,0 +1,85 @@
+# Dev CLI project rules for commands Codex may request outside the sandbox.
+# Rules are advisory project policy and load only when the project .codex layer is trusted.
+
+prefix_rule(
+    pattern = ["go", "test"],
+    decision = "allow",
+    justification = "Go tests are the standard Dev CLI verification command.",
+    match = [
+        "go test ./...",
+        "go test -v ./internal/config",
+        "go test -v -run TestLoad ./internal/config",
+    ],
+)
+
+prefix_rule(
+    pattern = ["go", "build"],
+    decision = "allow",
+    justification = "Go builds are safe local verification for the Dev CLI binary.",
+    match = [
+        "go build -o dev main.go",
+        "go build -v -o dev main.go",
+    ],
+)
+
+prefix_rule(
+    pattern = ["go", "fmt"],
+    decision = "allow",
+    justification = "Go formatting is expected after Go source edits.",
+    match = [
+        "go fmt ./...",
+    ],
+)
+
+prefix_rule(
+    pattern = ["go", "mod", "tidy"],
+    decision = "allow",
+    justification = "go mod tidy is expected after Go module or source edits.",
+    match = [
+        "go mod tidy",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", ["status", "log", "diff", "show", "describe"]],
+    decision = "allow",
+    justification = "Read-only git inspection is safe and useful for Dev CLI maintenance.",
+    match = [
+        "git status --short",
+        "git log --oneline v1.0.0..HEAD",
+        "git diff --stat",
+        "git show --stat HEAD",
+        "git describe --tags --abbrev=0",
+    ],
+)
+
+prefix_rule(
+    pattern = ["gh", "release", ["list", "view"]],
+    decision = "allow",
+    justification = "Viewing GitHub Release state is needed for release preparation.",
+    match = [
+        "gh release list",
+        "gh release view v1.0.0",
+    ],
+)
+
+prefix_rule(
+    pattern = ["gh", "release", ["create", "upload", "edit"]],
+    decision = "prompt",
+    justification = "Mutating GitHub Releases must be approved.",
+    match = [
+        "gh release create v1.0.0 --title v1.0.0 --notes-file notes.md",
+        "gh release upload v1.0.0 dev-linux-amd64.tar.gz",
+        "gh release edit v1.0.0 --notes-file notes.md",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "Pushing tags or branches mutates remote git state and must be approved.",
+    match = [
+        "git push origin v1.0.0",
+        "git push",
+    ],
+)
