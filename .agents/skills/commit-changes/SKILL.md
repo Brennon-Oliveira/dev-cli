@@ -25,7 +25,7 @@ Use this workflow to commit repository changes cleanly and in small logical grou
 
 ## Message Standard
 
-Follow Conventional Commits 1.0.0 exactly:
+Use this self-contained Conventional Commits subset. Do not look up external documentation for routine commits.
 
 ```text
 <type>[optional scope]: <description>
@@ -37,15 +37,15 @@ Follow Conventional Commits 1.0.0 exactly:
 
 Rules:
 
-- Prefix every commit with a type, optional scope, optional `!`, then `: `.
-- Use `feat` only when adding a user-facing feature or capability.
-- Use `fix` only when fixing a bug.
-- Use allowed supporting types when appropriate, such as `docs`, `ci`, `chore`, `test`, `refactor`, `style`, `perf`, or `build`.
-- Use a noun scope when it helps identify the codebase area, for example `chore(harness): ...`.
-- Keep the description short, imperative, lowercase unless a proper noun requires casing, and do not end it with punctuation.
-- For breaking changes, add `!` before the colon or include a footer beginning exactly with `BREAKING CHANGE: `.
-- Put a blank line before a body and before footers.
-- Use body text only when the why/risk is important and not obvious from the diff.
+- Prefix every commit with `type`, optional `(scope)`, optional `!`, then `: `.
+- Use `feat` for a new feature or capability.
+- Use `fix` for a bug fix.
+- Use `ci` for CI/workflow changes, `docs` for documentation, `test` for tests, `refactor` for behavior-preserving code changes, `style` for formatting-only changes, `perf` for performance improvements, `build` for build/dependency changes, and `chore` for maintenance that fits none of the above.
+- Use a short noun scope when it clarifies the affected area, for example `harness`, `release`, `cmd`, `config`, or `devcontainer`.
+- Write the description as a short imperative summary, lowercase unless a proper noun requires casing, with no trailing punctuation.
+- Mark breaking changes with `!` before `:` or a footer beginning exactly `BREAKING CHANGE: `.
+- Add a blank line before a body and before footers.
+- Add a body only when the staged diff needs non-obvious context.
 
 ## Commit
 
@@ -54,5 +54,3 @@ Rules:
 3. For commits needing a body or footer, use multiple `-m` arguments.
 4. After each commit, run `git status --short` and continue with the next logical theme.
 5. At the end, report each commit hash and message, plus any remaining uncommitted files.
-
-Source for the message format: https://www.conventionalcommits.org/en/v1.0.0/
