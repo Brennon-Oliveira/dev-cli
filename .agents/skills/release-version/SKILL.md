@@ -1,38 +1,79 @@
 ---
 name: release-version
-description: Use when preparing or publishing a Dev CLI version release, including inspecting git tags and GitHub Releases, drafting English release notes, running verification, creating and pushing a version tag, and creating or updating the GitHub Release.
+description: Use when preparing or publishing a Dev CLI version release from a requested tag, including inspecting commits since the previous version, drafting English release notes, verifying, creating and pushing the tag, creating a draft GitHub Release, and returning the release URL.
 ---
 
 # Release Version
 
 Use this workflow for Dev CLI releases. Keep release notes and harness output in English. Do not translate existing Portuguese CLI messages.
 
+Expected prompt shape:
+
+```text
+$release-version v1.0.0-beta5
+```
+
+If the user triggers the skill without a tag, inspect release state first, then ask for the intended version tag before any mutating step.
+
 ## Preconditions
 
-1. Confirm the intended version tag, for example `v1.4.0`.
+1. Confirm the intended tag, for example `v1.0.0-beta5`.
 2. Check the worktree with `git status --short`; do not release from an unintentionally dirty tree.
-3. Inspect existing tags and releases:
-   - `git describe --tags --abbrev=0` for the latest local tag.
-   - `git log --oneline <latest-tag>..HEAD` for unreleased commits.
-   - `gh release list` and `gh release view <tag>` when GitHub state matters.
-4. Remember that `.github/workflows/build.yml` runs on `v*` tag pushes and creates or updates the GitHub Release. `.github/workflows/snap-publish.yml` runs on the `release: released` event, so publish only after the tag and release notes are correct.
+3. Confirm the requested tag does not already exist:
+   ```bash
+   git tag --list vX.Y.Z
+   gh release view vX.Y.Z
+   ```
+4. Inspect existing version state before drafting notes:
+   ```bash
+   git tag --list
+   git describe --tags --abbrev=0
+   gh release list
+   ```
+5. Identify the previous version to compare against. Prefer the latest relevant published GitHub Release tag; if GitHub is unavailable or irrelevant, use the latest local tag on the current history.
+6. Inspect commits since the previous version:
+   ```bash
+   git log --oneline <previous-tag>..HEAD
+   git log --oneline --decorate -n 12
+   gh release view <previous-tag>
+   ```
+7. If there are no meaningful commits since the previous version, stop and ask whether to continue.
+8. Remember that `.github/workflows/build.yml` runs on `v*` tag pushes and creates or updates the GitHub Release. `.github/workflows/snap-publish.yml` runs on the `release: released` event, so publish only after the tag and release notes are correct.
 
 ## Release Notes
 
-Draft standardized release notes before mutating remote state:
+Draft standardized release notes before mutating remote state. Use only sections that contain at least one bullet; hide empty sections. Do not include verification commands in the release notes.
+
+```md
+## What's Added
+- Added feature or maintainer-facing capability.
+
+## What's Changed
+- Changed behavior, documentation, automation, or maintenance flow.
+
+## What's Fixed
+- Fixed bug or incorrect behavior.
+---
+```
+
+Examples:
 
 ```md
 ## What's Changed
-
-- Concise user-facing or maintainer-facing change.
-
-## Verification
-
-- `go test -v ./...`
-- `go build -o dev main.go`
+- Expanded README and documentation coverage.
+---
 ```
 
-If there are no meaningful changes since the previous tag, stop and ask whether to continue.
+```md
+## What's Added
+- Added the Codex maintenance harness for repository workflows.
+
+## What's Fixed
+- Fixed devcontainer workspace resolution by adding a fallback when the configured workspace folder is unavailable.
+---
+```
+
+Prefer passing short notes directly with `gh release create --notes` or `gh release edit --notes` to avoid creating temporary files. If notes are too long or shell quoting becomes fragile, create a notes file inside the project only for review, use it, then delete it before finishing unless the user asks to keep it. Do not leave release-note files in `/tmp`.
 
 ## Verification
 
@@ -45,21 +86,44 @@ go build -o dev main.go
 
 Run `go fmt ./...` first if Go files changed and formatting has not already been checked.
 
-## Publish
+## Tag And Draft Release
 
-1. Create the local tag only after verification:
+1. Re-check the worktree after verification:
+   ```bash
+   git status --short
+   ```
+2. Create the local tag only after verification:
    ```bash
    git tag vX.Y.Z
    ```
-2. Push the tag only with approval:
+3. Verify the tag target:
+   ```bash
+   git show --no-patch --oneline vX.Y.Z
+   git log --oneline --decorate -n 3
+   ```
+4. Push the tag only with explicit user approval:
    ```bash
    git push origin vX.Y.Z
    ```
-3. Create or update the GitHub Release only with approval:
+5. Create the GitHub Release as a draft unless the user explicitly asks to publish:
    ```bash
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <notes-file>
-   gh release edit vX.Y.Z --title "vX.Y.Z" --notes-file <notes-file>
+   gh release create vX.Y.Z --title "vX.Y.Z" --notes "<release-notes>" --draft
    ```
-4. After the workflow finishes, inspect release assets with `gh release view vX.Y.Z`.
+6. If the draft already exists, update it instead of creating a duplicate:
+   ```bash
+   gh release edit vX.Y.Z --title "vX.Y.Z" --notes "<release-notes>" --draft
+   ```
+7. Inspect the draft and return its URL to the user:
+   ```bash
+   gh release view vX.Y.Z
+   ```
+
+Final response must include:
+
+- The pushed tag.
+- Whether the GitHub Release is a draft.
+- The release URL generated by GitHub.
+- Verification commands that passed.
+- Any files created and deleted for release-note handling, if applicable.
 
 Do not use broad shell prefixes or destructive git commands for release work.
